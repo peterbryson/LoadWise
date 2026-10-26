@@ -1,0 +1,53 @@
+// Data model v0: the starting point for Sprint 1 week 2 (Prisma schema v1).
+// Still to add: sessions, wellness entries, injuries, flags and computed metrics.
+// The many-to-many Membership table is what makes multi-team load possible (FR 2, FR 4).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ATHLETE
+  COACH
+  PHYSIO
+  SC_COACH
+}
+
+model User {
+  id          String       @id @default(uuid())
+  firebaseUid String       @unique
+  email       String       @unique
+  displayName String
+  createdAt   DateTime     @default(now())
+  memberships Membership[]
+}
+
+model Squad {
+  id          String       @id @default(uuid())
+  name        String
+  inviteCode  String       @unique
+  createdAt   DateTime     @default(now())
+  memberships Membership[]
+}
+
+/// A user's role in one squad. Staff see an athlete's data only while consentGiven is true (NFR 2).
+model Membership {
+  id           String    @id @default(uuid())
+  userId       String
+  squadId      String
+  role         Role
+  consentGiven Boolean   @default(false)
+  consentedAt  DateTime?
+  joinedAt     DateTime  @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  squad Squad @relation(fields: [squadId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, squadId])
+  @@index([squadId])
+}

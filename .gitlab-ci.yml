@@ -1,0 +1,38 @@
+# Runs on every push and merge request. Definition of Done = this pipeline is green.
+default:
+  image: node:22
+  before_script:
+    - corepack enable
+    - pnpm config set store-dir .pnpm-store
+    - pnpm install --frozen-lockfile
+  cache:
+    key:
+      files:
+        - pnpm-lock.yaml
+    paths:
+      - .pnpm-store
+
+stages:
+  - verify
+  - test
+
+lint:
+  stage: verify
+  script:
+    - pnpm lint
+
+typecheck:
+  stage: verify
+  script:
+    - pnpm typecheck
+
+test:
+  stage: test
+  script:
+    - pnpm test
+  artifacts:
+    when: always
+    paths:
+      - '**/coverage/'
+    reports:
+      junit: '**/reports/junit-*.xml'

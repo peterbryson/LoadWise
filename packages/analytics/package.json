@@ -1,0 +1,21 @@
+{
+  "name": "@loadwise/analytics",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pure, framework-free load metric functions (FR 2)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test": "jest --coverage"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.0.0",
+    "jest-junit": "^16.0.0",
+    "ts-jest": "^29.4.0",
+    "typescript": "^5.8.0"
+  }
+}

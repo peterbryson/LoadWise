@@ -1,0 +1,20 @@
+# Local development services. The API runs on your machine with `pnpm dev`.
+# An API container (Dockerfile) is added in Sprint 1 week 2 alongside the staging deploy.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: loadwise
+      POSTGRES_PASSWORD: loadwise
+      POSTGRES_DB: loadwise
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U loadwise']
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:
