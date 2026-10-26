@@ -10,3 +10,6 @@ reports/
 .env.*
 !.env.example
 .DS_Store
+CLAUDE.md
+CLAUDE.local.md
+.claude/
