@@ -18,6 +18,30 @@ Template:
 
 ---
 
+## DL-004: Authentication on by default, with a swappable token verifier
+
+- Date: 2 Nov 2026
+- Status: Accepted
+- Context: #2 (create a squad and invite) needs to know who is signed in, but Firebase sign-in
+  (#1) is not set up yet. Every endpoint must enforce identity in the API, never only in the app (NFR 2).
+- Options considered:
+  - **Guard per controller (`@UseGuards`):** explicit, but a new endpoint is unprotected if the
+    decorator is forgotten.
+  - **Global guard with a `@Public()` opt-out:** every route is locked unless marked public, so
+    the safe option is the default. Chosen.
+  - **For the token check before #1:**
+    - *A dev login that trusts a user ID header.* Quick to demo, but it is a backdoor that could
+      reach production by mistake.
+    - *A `TokenVerifier` interface.* Tests use a fake, the real app uses a verifier that rejects
+      every token until the Firebase one replaces it in #1. Chosen: the API fails closed.
+- Decision: a global `AuthGuard` (`APP_GUARD`) with `@Public()` for `/health` only, calling a
+  `TokenVerifier` behind an injection token. A LoadWise user record is created on the first
+  signed-in request. Invite codes only ever grant the ATHLETE role; staff joining an existing
+  squad is left to #11, because a shared code that could grant staff roles would expose athlete data.
+- Consequences: the API cannot be called by a real user until #1 lands; until then the HTTP
+  tests are the demo. Adding Firebase is one new class and one line in `AuthModule`. The tests
+  fake the database, so real-constraint integration tests (Postgres in CI) are a follow-up.
+
 ## DL-003: Self-hosted GitLab runner in Docker
 
 - Date: 2 Nov 2026
