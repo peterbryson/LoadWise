@@ -18,6 +18,28 @@ Template:
 
 ---
 
+## DL-003: Self-hosted GitLab runner in Docker
+
+- Date: 2 Nov 2026
+- Status: Accepted
+- Context: no shared or instance runners are available on gitlab.eeecs.qub.ac.uk, so every
+  pipeline stayed pending. The Definition of Done needs a green pipeline, the requirements
+  traceability matrix is built from CI's JUnit reports, and NFR 4 needs the AI evaluation suite to
+  run in CI on every commit.
+- Options considered:
+  - **Self-hosted runner in Docker on my laptop:** free, set up in about 10 minutes, and the Docker
+    executor gives every job a clean `node:22` container. Only runs while my laptop and Docker
+    Desktop are on.
+  - **Mirror to GitHub and use GitHub Actions:** always-on hosted runners, but the CI config would
+    need rewriting and maintaining in two places, and the code would live in two places.
+  - **Run checks locally only:** no setup, but leaves no verifiable record, so it is not real
+    evidence of testing.
+- Decision: self-hosted GitLab Runner (Docker executor) in a Docker container on my laptop, set to
+  restart with Docker. First pipeline (lint, typecheck, test) passed on 2 Nov.
+- Consequences: every merge request now has CI evidence. Pipelines queue while my laptop is off,
+  so Docker Desktop is set to start at sign-in. Revisit if the university provides a runner, or
+  when the Azure staging deploy (Sprint 2) needs reliable runs.
+
 ## DL-002: Data model v1: athlete-owned health data and per-squad consent with history
 
 - Date: 2 Nov 2026
