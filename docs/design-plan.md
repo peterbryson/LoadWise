@@ -79,15 +79,15 @@ docs/
 About 25 hours of work and library blocks this week. Do these in order:
 
 - [ ] Submit the ethics application, covering interviews (Nov), the pilot and SUS (Sprint 8), and peer usability testing
-- [ ] Create GitLab issues for all 26 stories, with labels for MoSCoW, requirement (FR/NFR) and story points, plus an issue template with an acceptance criteria section
+- [ ] Create GitLab issues for all 26 stories, with labels for MoSCoW, requirement (FR/NFR) and story points, plus an issue template with an acceptance criteria section *(issue template done)*
 - [ ] Create milestones for Sprints 1 to 8 and set up the issue board columns
-- [ ] Protect `main` (merge via merge request only) and add a merge request template with a self-review checklist
-- [ ] Scaffold the monorepo with pnpm and Turborepo (layout above)
-- [ ] Create the `docs/` folder and all the log files
-- [ ] Decision log entry 1: Firebase vs your own NestJS and Postgres backend (Ch4 tech justification)
+- [ ] Protect `main` (merge via merge request only) and add a merge request template with a self-review checklist *(MR template done)*
+- [x] Scaffold the monorepo with pnpm and Turborepo (layout above)
+- [x] Create the `docs/` folder and all the log files
+- [x] Decision log entry 1: Firebase vs your own NestJS and Postgres backend (Ch4 tech justification)
 - [ ] Set up the dissertation template now (Calibri 11pt, 1.5 spacing, 2.5 cm margins, 50-page limit for Ch1 to Ch7) and a reference manager (Zotero) loaded with the spec's references
-- [ ] README v1: purpose, architecture sketch, how to run, status
-- [ ] Sprint 1 planning notes
+- [x] README v1: purpose, architecture sketch, how to run, status
+- [ ] Sprint 1 planning notes *(goal and story points done; setup tasks still need estimates)*
 
 #### Week 2 (w/c 2 Nov): auth, data model, pipeline, staging
 
