@@ -1,6 +1,8 @@
-// Data model v0: the starting point for Sprint 1 week 2 (Prisma schema v1).
-// Still to add: sessions, wellness entries, injuries, flags and computed metrics.
+// Data model v1 (Sprint 1 week 2). Design reasoning: DL-002 in docs/decision-log.md; diagram: docs/design/erd.md.
 // The many-to-many Membership table is what makes multi-team load possible (FR 2, FR 4).
+// Health data (sessions, wellness, injuries, flags) belongs to the athlete, not to a squad, so
+// load is combined across every team and deleting an account removes everything (#14).
+// Computed metrics (ACWR, monotony, strain) are not stored yet: added with #7 in Sprint 3.
 
 generator client {
   provider = "prisma-client-js"
@@ -18,13 +20,38 @@ enum Role {
   SC_COACH
 }
 
+/// Matches SessionTypeSchema in @loadwise/shared.
+enum SessionType {
+  TRAINING
+  MATCH
+  GYM
+  OTHER
+}
+
+enum ConsentAction {
+  GRANTED
+  WITHDRAWN
+}
+
+/// Matches the initial FR 2 rules. More rules are added as the analytics engine grows.
+enum FlagRule {
+  ACWR_HIGH
+  WELLNESS_LOW
+}
+
 model User {
-  id          String       @id @default(uuid())
-  firebaseUid String       @unique
-  email       String       @unique
+  id          String   @id @default(uuid())
+  firebaseUid String   @unique
+  email       String   @unique
   displayName String
-  createdAt   DateTime     @default(now())
-  memberships Membership[]
+  createdAt   DateTime @default(now())
+
+  memberships     Membership[]
+  sessions        Session[]
+  wellnessEntries WellnessEntry[]
+  injuries        Injury[]        @relation("InjuryAthlete")
+  injuriesLogged  Injury[]        @relation("InjuryRecordedBy")
+  flags           Flag[]
 }
 
 model Squad {
@@ -33,21 +60,114 @@ model Squad {
   inviteCode  String       @unique
   createdAt   DateTime     @default(now())
   memberships Membership[]
+  sessions    Session[]
 }
 
-/// A user's role in one squad. Staff see an athlete's data only while consentGiven is true (NFR 2).
+/// A user's role in one squad. For athletes, consentGiven is the current consent state for this
+/// squad, which the API guards check on every staff request (NFR 2). It is a cached copy of the
+/// latest ConsentEvent and is only ever written in the same transaction as a new event.
+/// consentGiven is ignored for staff memberships.
 model Membership {
-  id           String    @id @default(uuid())
+  id           String   @id @default(uuid())
   userId       String
   squadId      String
   role         Role
-  consentGiven Boolean   @default(false)
-  consentedAt  DateTime?
-  joinedAt     DateTime  @default(now())
+  consentGiven Boolean  @default(false)
+  joinedAt     DateTime @default(now())
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  squad Squad @relation(fields: [squadId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  squad         Squad          @relation(fields: [squadId], references: [id], onDelete: Cascade)
+  consentEvents ConsentEvent[]
 
   @@unique([userId, squadId])
   @@index([squadId])
+}
+
+/// Append-only history of an athlete granting or withdrawing consent for one squad. UK GDPR
+/// Art. 7(1) requires us to be able to show when consent was given, so it is never updated or deleted
+/// except when the athlete deletes their account.
+model ConsentEvent {
+  id           String        @id @default(uuid())
+  membershipId String
+  action       ConsentAction
+  createdAt    DateTime      @default(now())
+
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  @@index([membershipId, createdAt])
+}
+
+/// FR 1: a logged training session or match. Session load (RPE x minutes) is calculated by
+/// @loadwise/analytics, not stored, so there is one source of truth for the formula.
+model Session {
+  id              String      @id @default(uuid())
+  athleteId       String
+  /// The team the session was for. Null for personal sessions (e.g. a solo gym session).
+  squadId         String?
+  type            SessionType
+  date            DateTime    @db.Date
+  durationMinutes Int
+  rpe             Int
+  createdAt       DateTime    @default(now())
+
+  athlete User   @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+  squad   Squad? @relation(fields: [squadId], references: [id], onDelete: SetNull)
+
+  @@index([athleteId, date])
+}
+
+/// FR 1: the daily wellness check, 1 (worst) to 5 (best) as in WellnessCheckSchema.
+model WellnessEntry {
+  id        String   @id @default(uuid())
+  athleteId String
+  date      DateTime @db.Date
+  sleep     Int
+  soreness  Int
+  fatigue   Int
+  stress    Int
+  createdAt DateTime @default(now())
+
+  athlete User @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  // One check per athlete per day; also stops offline sync creating duplicates (#6).
+  @@unique([athleteId, date])
+}
+
+/// #21 injuries and return to play. Recorded by a physio or the athlete; kept minimal on purpose
+/// (data minimisation, NFR 2). Never used to predict injury (#26 is a Won't).
+model Injury {
+  id           String    @id @default(uuid())
+  athleteId    String
+  recordedById String?
+  bodyArea     String
+  onsetDate    DateTime  @db.Date
+  /// Null while the athlete has not yet returned to play.
+  returnDate   DateTime? @db.Date
+  notes        String?
+  createdAt    DateTime  @default(now())
+
+  athlete    User  @relation("InjuryAthlete", fields: [athleteId], references: [id], onDelete: Cascade)
+  recordedBy User? @relation("InjuryRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@index([athleteId])
+}
+
+/// FR 2 / #9: a pattern raised by the deterministic analytics engine, never by the LLM.
+/// value and threshold are stored so the reason can always be shown and re-checked.
+model Flag {
+  id             String    @id @default(uuid())
+  athleteId      String
+  rule           FlagRule
+  date           DateTime  @db.Date
+  value          Float
+  threshold      Float
+  /// Plain-language reason shown to athletes and staff, e.g. "ACWR 1.62 is above 1.5".
+  reason         String
+  createdAt      DateTime  @default(now())
+  acknowledgedAt DateTime?
+
+  athlete User @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  // The engine re-runs when new data arrives; this stops it raising the same flag twice.
+  @@unique([athleteId, rule, date])
 }
