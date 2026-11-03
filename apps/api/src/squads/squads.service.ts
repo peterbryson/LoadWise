@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { CreateSquad, StaffRole } from '@loadwise/shared';
-import { Prisma } from '@prisma/client';
+import { isUniqueViolation } from '../common/prisma-errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateInviteCode } from './invite-code';
 
@@ -19,13 +19,6 @@ export interface JoinedSquad {
 
 /** A collision is astronomically unlikely, but the unique constraint makes it safe to retry. */
 const MAX_INVITE_CODE_ATTEMPTS = 3;
-
-/** Prisma's error code for a unique constraint violation. */
-const UNIQUE_VIOLATION = 'P2002';
-
-function isUniqueViolation(error: unknown): boolean {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === UNIQUE_VIOLATION;
-}
 
 @Injectable()
 export class SquadsService {
