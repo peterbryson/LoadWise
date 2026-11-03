@@ -18,6 +18,36 @@ Template:
 
 ---
 
+## DL-010: First app UI: Expo web on localhost, with labelled sample-data previews
+
+- Date: 3 Nov 2026
+- Status: Accepted (approach proposed by Claude Code; Peter chose the preview, squad and consent options on 3 Nov)
+- Context: Peter wanted to see every Figma V1 screen on localhost and try real Firebase sign-in
+  against the API. Most screens (Today metrics, wellness, sessions, flags, trends) have no API yet.
+- Options considered:
+  - **Where to build it:** *the real Expo app in Expo's web mode* (the same code later runs on a
+    phone, so the work is not thrown away; chosen) versus *a separate web prototype* (quicker to
+    style, but rebuilt later) versus *Figma's own prototype view* (no code, but no real sign-in).
+  - **Screens without an API:** *sample data with a visible "Preview" banner* (chosen) versus
+    *only build real features now* versus *sample data with no label* (rejected: in a demo or video
+    it would look as if #4, #5, #7 and #9 work).
+  - **Squad API, which has no Figma screen:** *a plain Squads section in Profile* (chosen) versus
+    *leaving it out until #2 and #10 are designed*.
+  - **Setup consent, which cannot be stored yet:** *UI only, marked as not saved* (chosen) versus
+    *building the consent API now* (rejected: it mixes a consent rule, which is core logic, into a
+    UI branch).
+- Decision: an Expo Router app in `apps/mobile`. Sign-in, create account, password reset and the
+  squad actions are real. Every sample-data screen shows a Preview banner whose chips switch between
+  the Figma states. Forms validate with the shared Zod schemas and show session load from
+  `@loadwise/analytics`, but save nothing. Icons are the Figma exports, one coloured set per theme.
+  The API allows browser calls only from origins listed in `CORS_ORIGINS`.
+- Consequences:
+  - Part of Sprint 2 week 3 (the Expo app and #1 sign-in in the app) is done early. #4, #5, #7 and
+    #9 are **not** done: their screens exist but save or compute nothing.
+  - On a phone, sign-in does not survive an app restart yet (`getAuth` is persistent on web only).
+  - Not checked against WCAG 2.2 AA and not user tested.
+  - Squads in Profile and the Preview tools are not in the Figma design and need designing with #2 and #10.
+
 ## DL-009: Verify Firebase ID tokens with firebase-admin
 
 - Date: 3 Nov 2026

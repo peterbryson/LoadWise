@@ -108,8 +108,8 @@ About 25 hours of work and library blocks this week. Do these in order:
 
 #### Week 3 (w/c 9 Nov): Expo app, sign-in and wellness
 
-- [ ] Generate the Expo app in `apps/mobile` (see its README) with the three-tab layout from the Figma V1 design (Today, Trends, Profile)
-- [ ] Finish **#1 sign in** end to end: Firebase sign-in in the app, token verified by the API, and explicit health-data consent at first-time setup recorded with its history (DL-008, new migration)
+- [ ] Generate the Expo app in `apps/mobile` (see its README) with the three-tab layout from the Figma V1 design (Today, Trends, Profile) *(started early on 3 Nov, DL-010: all V1 screens on localhost, most as labelled previews)*
+- [ ] Finish **#1 sign in** end to end: Firebase sign-in in the app, token verified by the API, and explicit health-data consent at first-time setup recorded with its history (DL-008, new migration) *(app sign-in done on 3 Nov; consent storage and phone persistence still to do)*
 - [ ] Ship **#5 wellness check**, saved through the API to PostgreSQL, timed under 60 seconds
 - [ ] Deploy the API (health endpoint first) to Azure staging, automatically from `main` *(moved from Sprint 1; until it exists, "deployed to staging" stays an outstanding Definition of Done item)*
 - [ ] 2-day time-boxed offline-sync spike at the end of the week, once #5 writes through the API (expo-sqlite queue vs alternatives). Write it up in the decision log (interim video material)
