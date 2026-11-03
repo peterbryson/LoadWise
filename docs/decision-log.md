@@ -18,6 +18,32 @@ Template:
 
 ---
 
+## DL-009: Verify Firebase ID tokens with firebase-admin
+
+- Date: 3 Nov 2026
+- Status: Accepted (Peter chose firebase-admin over jose on 3 Nov)
+- Context: #1 replaces `RejectAllTokenVerifier` with a verifier for Firebase ID tokens (DL-004).
+  Checking a token means verifying its signature against Google's rotating public keys, plus its
+  expiry, issuer, audience and subject (NFR 2).
+- Options considered:
+  - **firebase-admin (Google's SDK):** `verifyIdToken` does every check and handles key rotation.
+    Needs only the project ID, with no service account. A large dependency.
+  - **jose with Google's public keys:** small, but every claim check is hand-written
+    security code to own and test.
+- Decision: firebase-admin 14 behind the existing `TokenVerifier` interface. `createTokenVerifier`
+  uses it when `FIREBASE_PROJECT_ID` is set and falls back to `RejectAllTokenVerifier` otherwise,
+  so a missing setting fails closed.
+- Consequences:
+  - Token revocation is not checked (that needs a service account); ID tokens expire after an hour.
+  - firebase-admin reports a failed key download with the same code as a bad token, so a Google
+    outage shows as 401, not 503. Failing closed was preferred to parsing error messages.
+  - firebase-admin 14 depends on `jose`, which is ES-module only. Node 22 loads it at runtime, but
+    Jest cannot, so `apps/api/jest.config.js` compiles `jose` for tests. Staying on firebase-admin 13
+    (CommonJS) was rejected because it has had no release since May 2026.
+  - Email verification is not required yet. Because accounts are never linked by email (409), an
+    unverified sign-up cannot take over an account, but it could block the real owner's email.
+    Revisit with the app sign-in screens in Sprint 2.
+
 ## DL-008: Explicit health-data consent at first-time setup
 
 - Date: 3 Nov 2026
