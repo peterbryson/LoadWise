@@ -9,7 +9,23 @@ in plain language. Coaches, S&C coaches and physios see a squad view with role- 
 consent-based access.
 
 > CSC3032 Software Engineering Project, Queen's University Belfast · Peter Bryson (40405392)
-> Status: **Sprint 1, project skeleton.** See [`docs/design-plan.md`](docs/design-plan.md) for the week-by-week plan.
+> Status (3 Nov 2026): **Sprint 1, week 2.** See [`docs/design-plan.md`](docs/design-plan.md) for the week-by-week plan.
+
+### Current status
+
+| Area | State |
+| --- | --- |
+| API | NestJS with `/health`, a global auth guard, and #2 create a squad and join by invite code (no squad member list yet) |
+| Sign-in (#1) | **Not done.** The API uses `RejectAllTokenVerifier`, so every signed-in route returns 401 until the Firebase verifier lands |
+| Database | Data model v1 and the init migration ([`docs/design/erd.md`](docs/design/erd.md)) |
+| Analytics | Session load only |
+| Mobile app | Not generated yet (Sprint 2). Screens are designed in Figma: see [`docs/design/`](docs/design/) |
+| Staff dashboard | Not started (Sprint 7, Should) |
+| CI | Lint, typecheck and tests on a self-hosted GitLab runner |
+| Staging | **Not deployed.** Moved to Sprint 2 |
+| Tests | 39 passing on 3 Nov. API tests fake the database; real PostgreSQL integration tests are still to do |
+
+Remaining MVP work is built athlete-first, one complete feature at a time (DL-005).
 
 ---
 
@@ -21,24 +37,29 @@ TypeScript types, validation schemas and the analytics engine.
 ```
 loadwise/
 ├── apps/
-│   ├── api/                  NestJS REST API: auth guards, squads, sessions, flags, AI tools
-│   │   ├── prisma/           Database schema (PostgreSQL via Prisma)
+│   ├── api/                  NestJS REST API
+│   │   ├── prisma/           Database schema and migrations (PostgreSQL via Prisma)
 │   │   └── src/
 │   │       ├── main.ts       Entry point
 │   │       ├── app.module.ts Root module; each feature is its own module
-│   │       └── health/       GET /health liveness check (example module + test)
-│   ├── mobile/               Expo + React Native athlete app (generated in Sprint 2; see its README)
-│   └── web/                  Next.js staff dashboard (Sprint 7, Should)
+│   │       ├── auth/         Global auth guard, @Public(), swappable TokenVerifier
+│   │       ├── common/       Zod validation pipe
+│   │       ├── health/       GET /health liveness check
+│   │       ├── prisma/       PrismaService
+│   │       └── squads/       #2 create a squad and join by invite code
+│   └── mobile/               README only; the Expo app is generated in Sprint 2
 ├── packages/
 │   ├── analytics/            Pure load-metric functions: session load, EWMA ACWR, monotony, strain
 │   └── shared/               Zod schemas + types used by API, app and dashboard
-├── docs/                     Plan, decision log, risk register, AI log, sprint and meeting notes
+├── docs/                     Plan, decision log, risk register, AI log, sprint and meeting notes, design
 ├── .gitlab/                  Issue (user story) and merge request templates
 ├── .gitlab-ci.yml            CI: lint, typecheck, tests with coverage + JUnit reports
 ├── docker-compose.yml        Local PostgreSQL
 ├── turbo.json                Task pipeline (build, lint, typecheck, test, dev)
 └── tsconfig.base.json        Shared TypeScript settings
 ```
+
+The staff dashboard (`apps/web`, Next.js) is planned for Sprint 7 and does not exist yet.
 
 ### Why it's split this way
 
@@ -78,13 +99,14 @@ The reasoning behind these choices is recorded in [`docs/decision-log.md`](docs/
 ### First-time setup
 
 ```bash
-pnpm install                       # installs every workspace; creates pnpm-lock.yaml
+pnpm install                       # installs every workspace and generates the Prisma client
 docker compose up -d db            # starts PostgreSQL on localhost:5432
 copy .env.example apps\api\.env    # Windows (macOS/Linux: cp .env.example apps/api/.env)
-pnpm --filter @loadwise/api prisma:migrate   # creates the tables (name the first migration "init")
+pnpm --filter @loadwise/api prisma:migrate   # applies the committed migrations
 ```
 
-Commit `pnpm-lock.yaml`. CI installs with `--frozen-lockfile` and fails without it.
+`pnpm-lock.yaml` is committed. CI installs with `--frozen-lockfile`, so update the lockfile in
+the same commit as any dependency change.
 
 ### Everyday commands (from the repo root)
 
@@ -98,6 +120,7 @@ Commit `pnpm-lock.yaml`. CI installs with `--frozen-lockfile` and fails without 
 | `pnpm --filter @loadwise/analytics test` | Run one workspace's tasks |
 
 Check it works: `curl http://localhost:3000/health` should return `{"status":"ok", ...}`.
+Every other route returns 401 until Firebase sign-in (#1) is added.
 
 ---
 
@@ -107,8 +130,10 @@ This project follows the process in [`docs/design-plan.md`](docs/design-plan.md)
 
 - **Scrum, two-week sprints.** Backlog = GitLab issues (MoSCoW, story points, one milestone per sprint).
 - **Definition of Done:** merged through a merge request from a feature branch, CI green (including
-  coverage and error-handling tests), deployed to staging.
-- **Branches:** `feat/<issue>-short-name`, `fix/...`, `refactor/...`, `docs/...`. `main` is protected.
+  coverage and error-handling tests), deployed to staging. Staging does not exist yet (Sprint 2),
+  so that item is outstanding for every story so far.
+- **Branches:** `feat/<issue>-short-name`, `fix/...`, `refactor/...`, `docs/...`. `main` changes
+  only through a merge request. TODO: Peter: confirm branch protection is switched on in GitLab.
 - **Commit messages:** conventional style, e.g. `feat(analytics): add EWMA ACWR (#7)`,
   `refactor(api): extract consent guard`.
 - **Test names start with their requirement ID**, e.g. `describe('FR2: ...')`, so CI's JUnit

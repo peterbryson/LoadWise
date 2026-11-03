@@ -1,7 +1,7 @@
 # LoadWise: Delivery Plan
 
 > CSC3032 Software Engineering Project · Peter Bryson (40405392)
-> Last updated: 26 Oct 2026 · Source of truth for weekly delivery. Update it at every sprint review.
+> Last updated: 3 Nov 2026 · Source of truth for weekly delivery. Update it at every sprint review.
 
 There are 25 working weeks from 26 Oct to the **19 Apr 2027** submission. Each week lists what ships, what gets set up and which dissertation section gets written, so every rubric line has evidence by April. Work follows two-week Scrum sprints. Tick items off, and move anything that slips into the next week with a note in the sprint review.
 
@@ -70,7 +70,8 @@ docs/
 ## 3. Phase 1: Foundations and MVP (26 Oct to 13 Dec)
 
 **Goal:** by 13 Dec, the 11 MVP stories (#1 to #11) run on staging with CI green. This is the system the interim video demonstrates.
-**Fallback, decided now:** if you are behind on 6 Dec, #10 ships as a list with flags (no trend charts) and #6 uses a simplified queue. Record any cut in the decision log.
+**Delivery order (3 Nov, DL-005):** build athlete-first, one complete feature at a time (API, PostgreSQL and app screen together), instead of finishing the whole backend before the screens. The squad and staff stories (#2, #3, #8, #10, #11) are still Must stories for the MVP; only their order changes. See `requirements-changes.md`.
+**Fallback, decided now:** if you are behind on 6 Dec, #10 ships as a simple list of consenting athletes with their flags and reasons (no trend charts), and #6 uses a simplified queue. Consent (#3) and role-based access (#11) are never cut. Record any cut in the decision log.
 
 ### Sprint 1: monorepo, API, data model, auth, CI (26 Oct to 8 Nov)
 
@@ -92,43 +93,49 @@ About 25 hours of work and library blocks this week. Do these in order:
 #### Week 2 (w/c 2 Nov): auth, data model, pipeline, staging
 
 - [ ] **Supervisor meeting, Wed 4 Nov:** show the board and decision log. Ask about ethics turnaround and what testing is allowed without approval. Agree a weekly slot
-- [ ] Prisma schema v1: users, squads, memberships with roles, consent, sessions, wellness, injuries, flags. Get the many-to-many membership and consent model right
+- [x] Prisma schema v1: users, squads, memberships with roles, consent, sessions, wellness, injuries, flags. Get the many-to-many membership and consent model right
 - [ ] Docker Compose for Postgres and the API
 - [ ] NestJS Firebase ID-token guard, global Zod validation pipe and a consistent error response format
-- [ ] GitLab CI: lint, typecheck, Jest, coverage report and JUnit export
-- [ ] Deploy a health endpoint to Azure staging, automatically from `main`
-- [ ] Ship **#1 sign in** and **#2 create a squad and invite**, with valid and invalid input tests
+- [x] GitLab CI: lint, typecheck, Jest, coverage report and JUnit export
+- [ ] ~~Deploy a health endpoint to Azure staging, automatically from `main`~~ *moved to Sprint 2, week 3 (see `requirements-changes.md`)*
+- [ ] Ship **#1 sign in** in the API, as much as is realistic by 8 Nov: a Firebase `TokenVerifier` replacing `RejectAllTokenVerifier`, with valid and invalid token tests *(no Firebase verifier in the repo as of 3 Nov)*
+- [ ] **#2 create a squad and invite**, with valid and invalid input tests *(create and join by invite code merged; the squad member list moves to Sprint 3, week 7)*
 - [ ] Rewrite the NFRs with measurable targets, and **add a sustainability or wider-impact NFR** (for example LLM tokens per athlete per week, or data per sync)
-- [ ] Wireframes and a navigation map for the athlete flows (log session, wellness check), in `docs/design/` (Ch4 UI/UX)
+- [ ] Wireframes and a navigation map for the athlete flows (log session, wellness check), in `docs/design/` (Ch4 UI/UX) *(Figma V1 screens in light and dark themes, linked from `docs/design/README.md`; navigation map not yet written)*
 - [ ] Sprint 1 review: burndown, **measured velocity**, retrospective, and re-plan Sprints 2 and 3 if needed
 
-### Sprint 2: offline-sync spike and athlete logging (9 to 22 Nov)
+### Sprint 2: athlete app, logging and offline sync (9 to 22 Nov)
 
-#### Week 3 (w/c 9 Nov): spike, then logging
+#### Week 3 (w/c 9 Nov): Expo app, sign-in and wellness
 
-- [ ] 2 to 3 day time-boxed offline-sync spike (expo-sqlite queue vs alternatives). Write it up in the decision log (interim video material)
-- [ ] Ship **#4 log session** (RPE 1 to 10, rejecting out-of-range values)
+- [ ] Generate the Expo app in `apps/mobile` (see its README) with the three-tab layout from the Figma V1 design (Today, Trends, Profile)
+- [ ] Finish **#1 sign in** end to end: Firebase sign-in in the app, token verified by the API, and explicit health-data consent at first-time setup recorded with its history (DL-008, new migration)
+- [ ] Ship **#5 wellness check**, saved through the API to PostgreSQL, timed under 60 seconds
+- [ ] Deploy the API (health endpoint first) to Azure staging, automatically from `main` *(moved from Sprint 1; until it exists, "deployed to staging" stays an outstanding Definition of Done item)*
+- [ ] 2-day time-boxed offline-sync spike at the end of the week, once #5 writes through the API (expo-sqlite queue vs alternatives). Write it up in the decision log (interim video material)
 - [ ] Draft interview questions for coaches, physios and athletes
 - [ ] Competitor table with pros and cons: Catapult, STATSports, Kitman Labs, Actimet, PlayerPulse, YouCoach, WHOOP, Strava (Ch1)
 
 #### Week 4 (w/c 16 Nov): short week (CSC3067 demo Monday, London Friday to Sunday)
 
 - [ ] CSC3067 baseline demo on Mon 16 Nov comes first
-- [ ] Ship **#5 wellness check**, timed under 60 seconds
+- [ ] Ship **#4 log session** (RPE 1 to 10, rejecting out-of-range values). First make `SessionTypeSchema` uppercase to match Prisma and `StaffRoleSchema`
+- [ ] Session history as part of #4: a recent-sessions list opened from the "Latest session" card on Today
 - [ ] Ship **#6 offline sync**, with no duplicates and sync within 1 minute, tested
 - [ ] Use case descriptions: log session, wellness check (Ch3)
 - [ ] Ch5 notes: offline sync design, roadblocks and the fix
 - [ ] Book 3 to 5 interviews for w/c 23 Nov if ethics is approved
-- [ ] Sprint 2 review and retrospective before Friday. Record #3 moving to Sprint 3 in `requirements-changes.md`
+- [ ] Sprint 2 review and retrospective before Friday
 
 ### Sprint 3: analytics engine and staff views (23 Nov to 13 Dec, extended for coursework)
 
-#### Week 5 (w/c 23 Nov): analytics engine and consent
+#### Week 5 (w/c 23 Nov): analytics engine, trends and flags
 
 - [ ] `packages/analytics` as pure functions, test-first against hand-calculated fixtures: session load, weekly load, EWMA ACWR, monotony, strain
 - [ ] Strategy pattern so rolling vs EWMA ACWR are swappable models (Ch4 and Ch5 design-pattern evidence)
-- [ ] Ship **#7 load metrics** and **#8 combined multi-team load**
-- [ ] Ship **#3 multi-squad membership and consent**, with consent-withdrawal tests
+- [ ] Write the #7 and #9 fixtures against the metric definitions in DL-007 ("usual week", 28-day baseline, when metrics first appear)
+- [ ] Ship **#7 load metrics**, shown to the athlete, including a simple Trends tab: weekly load for the last 6 weeks and ACWR
+- [ ] Ship **#9 flags**, each with its reason, value and threshold, shown to the athlete in plain language. Wellness 7-day averages against baseline on the Trends tab come with this story
 - [ ] pg-boss metric recomputation when new data arrives
 - [ ] Run user interviews and log every requirement they change
 - [ ] Wireframes for the staff squad overview, informed by the interviews
@@ -137,7 +144,7 @@ About 25 hours of work and library blocks this week. Do these in order:
 
 - [ ] CSC3067 report and code (Mon 7 Dec) and CSC3045 assignment (Tue 8 Dec) come first
 - [ ] Weekly routines only
-- [ ] If you get a spare evening: #9 flag rules in `packages/analytics` only, as pure functions with fixtures
+- [ ] If you get a spare evening: finish anything left over from week 5 in `packages/analytics` only
 
 ---
 
@@ -146,11 +153,23 @@ About 25 hours of work and library blocks this week. Do these in order:
 #### Week 7 (w/c 7 Dec): submit coursework, then close Sprint 3
 
 - [ ] Submit CSC3067 on Monday and CSC3045 on Tuesday
-- [ ] Wednesday to Sunday: ship **#9 flags** (each with its reason), **#10 squad overview** (under 2 seconds for 40 athletes) and **#11 role-based access** (a test for every role)
+- [ ] Wednesday to Sunday, in this order:
+  - Finish **#2**: the squad member list
+  - Ship **#3 multi-squad membership and consent**, with consent-withdrawal tests
+  - Ship **#8 combined multi-team load**
+  - Ship **#11 role-based access** (a test for every role)
+  - Ship a basic **#10 squad overview** (under 2 seconds for 40 athletes). Fallback: a simple list of consenting athletes with their flags and reasons
 - [ ] Synthetic data generator (40 athletes, full season) for the demo and load tests
 - [ ] Architecture diagram and ERD v1 from what is built; use cases for flag raised, staff review and consent
 - [ ] Ch5 notes: analytics engine design, strategy pattern, test fixtures
 - [ ] Sprint 3 review and retrospective, and tag `v0.1-mvp` by Sun 13 Dec
+
+#### Effect of the 3 Nov reorder on later sprints
+
+- No deadline and no Must story changes. The 13 Dec MVP goal and the interim video plan stay as they are.
+- Week 7 now holds five Must stories (#2 finish, #3, #8, #10, #11) in the same week as the CSC3067 and CSC3045 submissions. The #10 fallback above is the first lever; consent and role-based access are not cut.
+- Staff wireframes (week 5) still come before the staff work in week 7.
+- The Sprint 4 flag spike (week 13) is where the placeholder 28-day baseline and 1.5 guide shown in the Figma designs get tested.
 
 #### Week 8 (w/c 14 Dec): exam, then MVP review
 
@@ -333,3 +352,6 @@ Check this at every sprint review. An empty artefact column in March means a cap
 - [ ] Any May exams
 - [ ] Ethics approval turnaround and the no-approval testing route (ask on 4 Nov)
 - [ ] Startup hours per week from November
+- [x] What "usual week" means, how long the baseline is, and when metrics first appear to a new athlete: DL-007
+- [x] General health-data consent at first-time setup: DL-008
+- [x] Wellness scale: 1 to 5 with 5 as best and plain-language labels at each end (`requirements-changes.md`, 3 Nov)

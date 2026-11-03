@@ -18,6 +18,152 @@ Template:
 
 ---
 
+## DL-008: Explicit health-data consent at first-time setup
+
+- Date: 3 Nov 2026
+- Status: Accepted (decided by Claude Code at Peter's request, 3 Nov 2026; Peter to review)
+- Context: the first-time setup design asks the athlete to agree to LoadWise processing their
+  health data, but the schema only stores consent per squad membership (DL-002). Health data is
+  special category data under UK GDPR Art. 9, so processing needs a condition such as explicit
+  consent, and Art. 7(1) requires being able to show it was given. Per-squad consent (#3) only
+  covers sharing with staff, not processing in the first place, and says nothing about an athlete
+  who is in no squad.
+- Options considered:
+  - **Treat sign-up or terms acceptance as consent.** No schema change, but it is not a separate,
+    explicit consent and leaves nothing to show when it was given.
+  - **Rely on per-squad consent only, and drop the setup checkbox.** No change, but personal
+    logging outside any squad has no consent at all.
+  - **A user-level health-data consent with history**, using the same pattern as DL-002: an
+    append-only event log plus a cached current state, written in one transaction through one
+    tested service method. Chosen.
+- Decision: record explicit health-data consent per user at first-time setup, separately from
+  per-squad sharing consent. Agreeing to processing shares nothing with any squad. The API rejects
+  health-data writes (#4, #5) with 403 until it is given. It is added with #1 in Sprint 2 week 3
+  through a new migration; the exact fields are decided in that merge request and the ERD updated.
+- Consequences: one more step at first sign-in (NFR 1's 60 s target is for the daily log, not
+  onboarding). In the MVP, withdrawing this consent is done by deleting the account (#14, Sprint 4),
+  which removes all data. Until #14 exists there is no withdrawal route, which is acceptable only
+  because no real athlete data is used before the pilot (Sprint 8). Whether a softer "pause
+  processing" option is needed is revisited with #14.
+
+## DL-007: Metric definitions: usual week, baseline length and when metrics first appear
+
+- Date: 3 Nov 2026
+- Status: Accepted (decided by Claude Code at Peter's request, 3 Nov 2026; Peter to review). Thresholds and windows are configurable hypotheses until the Sprint 4 flag spike.
+- Context: #7 and #9 need fixed definitions before their hand-calculated fixtures are written.
+  The Figma V1 screens show a "usual week", a 28-day baseline progress bar and a 1.5 guide as
+  placeholders.
+- Options considered:
+  - **Usual week:** *mean of the last 4 completed weeks* (easy to explain and to check by hand);
+    *chronic EWMA load × 7* (consistent with ACWR, but hard to explain); *median of recent weeks*
+    (robust to one big week, but less familiar).
+  - **Baseline length:** *21 days* (faster to first flag, noisier); *28 days* (matches the usual
+    chronic ACWR window); *42 days* (more stable, six weeks without flags).
+  - **When metrics first appear:** *immediately* (numbers from sparse data, so false alarms);
+    *after the baseline window* (no flags while it builds); *after a minimum number of entries*.
+- Decision:
+  - Session load and this week's load (Monday to Sunday) are shown from the first session.
+  - **Usual week** = mean weekly load of the last 4 completed Monday-to-Sunday weeks, shown once 4
+    completed weeks have passed since the athlete's first entry. A day with no session counts as
+    zero load.
+  - **ACWR** = EWMA as in FR 2: acute 7 days, chronic 28 days, decay 2 / (N + 1)
+    (Williams et al., 2017). Shown, and used for flags, only once 28 days have passed since the
+    first logged session.
+  - **Wellness baseline** = mean and SD of each item over the previous 28 days, excluding today.
+    It needs at least 14 check-ins in that window; days without a check-in are skipped, not zero.
+  - A flag (#9) can only fire once its metric is shown. The ACWR above 1.5 and the wellness more
+    than 1.5 SD below baseline rules stay configurable.
+  - The "Day N of 28" progress on Today and Trends counts calendar days since the first entry.
+  - All of these are inputs to pure functions in `packages/analytics`; "today" is passed in, never read from a clock.
+- Consequences:
+  - New athletes see no flags for their first 4 weeks: no false alarms from sparse data, but no
+    flags either. The Today and Trends "building your baseline" states cover this.
+  - Because ACWR uses EWMA and the usual week is a simple mean, ACWR is **not** this week divided
+    by the usual week. The Figma sample figures (3,240 / 2,000 = 1.62) imply that it is, so the flag
+    detail screen must not present it that way.
+  - Counting a day with no session as zero load means a forgotten log lowers chronic load and can
+    raise ACWR. This is a known limitation, reduced by offline sync (#6) and reminders.
+
+## DL-006: Athlete app design V1: three tabs and a status-first Today screen
+
+- Date: 3 Nov 2026
+- Status: Accepted (decided by Claude Code at Peter's request, 3 Nov 2026; Peter to review)
+- Context: Sprint 2 builds the first athlete screens (#1, #4, #5, #6), and Sprint 3 adds metrics,
+  trends and flags (#7, #9). The app needs a navigation structure before the Expo app is generated.
+  NFR 1 asks for a daily log under 60 s and WCAG 2.2 AA. Flags must show their reason, value and
+  threshold, and must not read as a diagnosis. Design: [Figma LoadWise V1](https://www.figma.com/design/TqJIKbFrsCVRNd4aZx1Tnd/LoadWise-V1).
+  The options and trade-offs below are analysis written by Claude Code at Peter's request, not
+  results from user research.
+- Options considered:
+  - **Navigation:**
+    - *Three tabs (Today, Trends, Profile).* Few choices for quick pitch-side use; logging starts
+      from buttons on Today rather than a tab of its own.
+    - *Separate tabs for logging, metrics, flags and assistant.* Each feature is one tap away, but
+      more tabs to scan and a tab for a feature (the assistant) that does not exist until Sprint 5.
+  - **Today screen:**
+    - *Status first:* one plain-language line ("in your usual range" or a flag) above the numbers.
+    - *Numbers first:* ACWR, monotony and strain shown directly. More detail, but asks the
+      athlete to interpret ratios themselves.
+  - **Flags:**
+    - *Plain-language title with the value and guide underneath, and a "See why" detail screen.*
+    - *Raw metric and threshold only.* Meets "reason, value and threshold" with less design work,
+      but is harder for an amateur athlete to read.
+  - **AI assistant entry point:**
+    - *A fixed button at the bottom right on every tab, with no chat screen in this version.*
+      Reserves the place without building #12, #13 or #15 early.
+    - *Build a chat screen now.* Nothing safe to show until the engine tools and guardrails exist (Sprint 5).
+    - *No entry point until Sprint 5.* Simplest, but the layout may need changing later.
+- Decision (proposed): three tabs, status-first Today, plain-language flags with a detail screen,
+  and a placeholder AI button at the bottom right. Light and dark themes are both designed.
+- Consequences:
+  - The design has not been user tested or checked against WCAG 2.2 AA. NFR 1 and accessibility
+    claims need measuring on the built screens.
+  - The sample figures, the 28-day baseline and the 1.5 guide in the screens are placeholders,
+    not engine outputs or clinical thresholds. They depend on the open definitions of "usual week"
+    and baseline length, and on the Sprint 4 flag spike.
+  - The first-time setup screen asks for general consent to process health data, which the data
+    model does not store yet (see `requirements-changes.md`).
+  - The flag detail screen keeps its "What you can do" section, but its text may only suggest
+    talking the next sessions through with a coach, or a physio or GP for pain or injury. It never
+    tells the athlete to raise or lower load, rest, or return to play.
+  - Session history (part of #4) and the staff view (#10) still need adding to the design.
+
+## DL-005: Athlete-first delivery, one complete feature at a time
+
+- Date: 3 Nov 2026
+- Status: Accepted (decided by Claude Code at Peter's request, 3 Nov 2026; Peter to review)
+- Context: the 26 Oct plan built the API stories first (#1 and #2 in Sprint 1), then athlete
+  logging (Sprint 2), then analytics and staff views (Sprint 3). As of 3 Nov, the repo has no Firebase verifier for #1
+  (the API still uses `RejectAllTokenVerifier`), #2 is partly done, and no app screens exist.
+  All 11 MVP stories must run on staging by 13 Dec for the interim video (18 Jan).
+  The order is Peter's planning decision of 3 Nov; the comparison below was written by Claude
+  Code at his request.
+- Options considered:
+  - **Backend first (the 26 Oct plan):** permissions and data model settled before any screens,
+    but nothing usable on a phone until late in Sprint 2, and screens built last get the least
+    testing.
+  - **Athlete-first vertical slices:** each story is finished through API, database and app
+    before the next starts, so there is a working, demonstrable product from Sprint 2. The cost
+    is that consent, role-based access and the staff view all land in Sprint 3 week 7, which is
+    also the CSC3067 and CSC3045 submission week.
+  - **Staff-first:** builds the squad overview early, but with no athlete data to show.
+- Decision (proposed): athlete-first vertical slices in this order: #1 in the API by 8 Nov;
+  Sprint 2 week 3: Expo app, #1 in the app, #5; week 4: #4, session history, #6; Sprint 3 week 5:
+  #7, player trends, #9; week 7: finish #2, then #3, #8, #11 and a basic #10. Squad and staff
+  stories stay Must; only the order changes. Azure staging moves to Sprint 2.
+- Consequences:
+  - The Must scope and all deadlines are unchanged.
+  - Week 7 is the highest-risk week. If time runs short, #10 becomes a simple list of consenting
+    athletes with flags and reasons. Consent (#3) and role-based access (#11) are not cut.
+  - Until #3 and #11 exist, no staff route may return athlete health data. Athlete-facing routes
+    must only return the signed-in athlete's own data.
+  - #9 flags are built before #8 combined load, so flag tests at that point cover single-squad
+    and personal data; they need re-running once #8 combines load across squads.
+  - Staging is an outstanding Definition of Done item until Sprint 2.
+  - The offline-sync spike moves to the end of Sprint 2 week 3, after #5 writes through the API,
+    because week 4 is short and #6 depends on it. Wellness's one-entry-per-day constraint gives the
+    spike a real duplicate case to test against.
+
 ## DL-004: Authentication on by default, with a swappable token verifier
 
 - Date: 2 Nov 2026
