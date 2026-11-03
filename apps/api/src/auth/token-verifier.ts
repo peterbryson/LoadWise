@@ -9,8 +9,8 @@ export interface VerifiedIdentity {
 
 /**
  * Checks a sign-in token and returns who it belongs to, or throws UnauthorizedException.
- * An interface rather than calling Firebase directly, so tests can use a fake and the Firebase
- * implementation can be added with #1 without changing the guard.
+ * An interface rather than calling Firebase directly, so tests can use a fake and the guard does
+ * not depend on Firebase (the implementation is FirebaseTokenVerifier).
  */
 export interface TokenVerifier {
   verify(token: string): Promise<VerifiedIdentity>;
@@ -20,7 +20,7 @@ export interface TokenVerifier {
 export const TOKEN_VERIFIER = Symbol('TOKEN_VERIFIER');
 
 /**
- * Used until the Firebase verifier is added in #1. Rejects every token, so the API fails closed:
+ * Used when no Firebase project is configured. Rejects every token, so the API fails closed:
  * nothing behind the auth guard is reachable, rather than reachable without a real sign-in.
  */
 export class RejectAllTokenVerifier implements TokenVerifier {
