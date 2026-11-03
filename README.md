@@ -16,14 +16,14 @@ consent-based access.
 | Area | State |
 | --- | --- |
 | API | NestJS with `/health`, a global auth guard, and #2 create a squad and join by invite code (no squad member list yet) |
-| Sign-in (#1) | **API side in progress** (`feat/1-firebase-sign-in`): Firebase ID tokens are verified when `FIREBASE_PROJECT_ID` is set; without it every signed-in route returns 401. Checked by hand on 3 Nov with a real token from the `loadwise-dev` project. App sign-in and setup consent (DL-008) come in Sprint 2 |
+| Sign-in (#1) | API verifies Firebase ID tokens when `FIREBASE_PROJECT_ID` is set (checked by hand on 3 Nov with a real token). The app signs in with Firebase email and password. Setup consent is not stored yet (DL-008) |
 | Database | Data model v1 and the init migration ([`docs/design/erd.md`](docs/design/erd.md)) |
 | Analytics | Session load only |
-| Mobile app | Not generated yet (Sprint 2). Screens are designed in Figma: see [`docs/design/`](docs/design/) |
+| Mobile app | Expo app running in the browser on localhost: every Figma V1 screen in light and dark. Sign-in and squads are real; Today, Trends, flags and the logging forms are **labelled previews with sample data** (see [`apps/mobile/README.md`](apps/mobile/README.md)) |
 | Staff dashboard | Not started (Sprint 7, Should) |
 | CI | Lint, typecheck and tests on a self-hosted GitLab runner |
 | Staging | **Not deployed.** Moved to Sprint 2 |
-| Tests | 39 passing on 3 Nov. API tests fake the database; real PostgreSQL integration tests are still to do |
+| Tests | 76 passing on 3 Nov (9 analytics, 48 API, 19 mobile). API tests fake the database; real PostgreSQL integration tests are still to do |
 
 Remaining MVP work is built athlete-first, one complete feature at a time (DL-005).
 
@@ -47,7 +47,7 @@ loadwise/
 │   │       ├── health/       GET /health liveness check
 │   │       ├── prisma/       PrismaService
 │   │       └── squads/       #2 create a squad and join by invite code
-│   └── mobile/               README only; the Expo app is generated in Sprint 2
+│   └── mobile/               Expo + React Native athlete app (Expo Router, runs on web and phone)
 ├── packages/
 │   ├── analytics/            Pure load-metric functions: session load, EWMA ACWR, monotony, strain
 │   └── shared/               Zod schemas + types used by API, app and dashboard
@@ -77,7 +77,7 @@ The reasoning behind these choices is recorded in [`docs/decision-log.md`](docs/
 
 | Layer | Technology |
 | --- | --- |
-| Mobile app | Expo + React Native (TypeScript), expo-sqlite offline queue |
+| Mobile app | Expo + React Native (TypeScript), Expo Router, Firebase JS SDK; expo-sqlite offline queue planned (#6) |
 | Staff dashboard | Next.js (Sprint 7) |
 | API | NestJS (TypeScript), pg-boss background jobs |
 | Database | PostgreSQL + Prisma |
@@ -102,6 +102,7 @@ The reasoning behind these choices is recorded in [`docs/decision-log.md`](docs/
 pnpm install                       # installs every workspace and generates the Prisma client
 docker compose up -d db            # starts PostgreSQL on localhost:5432
 copy .env.example apps\api\.env    # Windows (macOS/Linux: cp .env.example apps/api/.env)
+copy apps\mobile\.env.example apps\mobile\.env   # Firebase web app settings for the app
 pnpm --filter @loadwise/api prisma:migrate   # applies the committed migrations
 ```
 
@@ -112,15 +113,15 @@ the same commit as any dependency change.
 
 | Command | What it does |
 | --- | --- |
-| `pnpm dev` | Builds packages, then runs the API in watch mode on http://localhost:3000 |
+| `pnpm dev` | Builds packages, then runs the API on http://localhost:3000 and the app on http://localhost:8081 |
 | `pnpm test` | All tests, with coverage and JUnit reports |
 | `pnpm lint` | ESLint across every workspace |
 | `pnpm typecheck` | TypeScript checks across every workspace |
 | `pnpm build` | Production builds |
 | `pnpm --filter @loadwise/analytics test` | Run one workspace's tasks |
 
-Check it works: `curl http://localhost:3000/health` should return `{"status":"ok", ...}`.
-Every other route returns 401 until Firebase sign-in (#1) is added.
+Check it works: `curl http://localhost:3000/health` should return `{"status":"ok", ...}`, and
+http://localhost:8081 should show the sign-in screen. Every other API route needs a Firebase ID token.
 
 ---
 

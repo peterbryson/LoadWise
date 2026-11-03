@@ -6,7 +6,9 @@ full resolution in the dissertation. Export PNG/SVG for the report.
 ## What exists (3 Nov 2026)
 
 - [`erd.md`](erd.md): entity relationship diagram for data model v1, drawn from the Prisma schema on 2 Nov.
-- Athlete app screens V1 in Figma (below).
+- Athlete app screens V1 in Figma (below), built in [`apps/mobile`](../../apps/mobile/README.md) and viewable on
+  localhost (DL-010). Differences from Figma: Preview banners on sample-data screens, a Squads section and
+  Preview tools in Profile, and a visible unchecked state for the consent checkbox.
 
 ## Planned (see `docs/design-plan.md`)
 
