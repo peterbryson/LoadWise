@@ -16,7 +16,7 @@ consent-based access.
 | Area | State |
 | --- | --- |
 | API | NestJS with `/health`, a global auth guard, and #2 create a squad and join by invite code (no squad member list yet) |
-| Sign-in (#1) | **Not done.** The API uses `RejectAllTokenVerifier`, so every signed-in route returns 401 until the Firebase verifier lands |
+| Sign-in (#1) | **API side in progress** (`feat/1-firebase-sign-in`): Firebase ID tokens are verified when `FIREBASE_PROJECT_ID` is set; without it every signed-in route returns 401. Checked by hand on 3 Nov with a real token from the `loadwise-dev` project. App sign-in and setup consent (DL-008) come in Sprint 2 |
 | Database | Data model v1 and the init migration ([`docs/design/erd.md`](docs/design/erd.md)) |
 | Analytics | Session load only |
 | Mobile app | Not generated yet (Sprint 2). Screens are designed in Figma: see [`docs/design/`](docs/design/) |
