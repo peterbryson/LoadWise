@@ -1,5 +1,5 @@
 # Local development services. The API runs on your machine with `pnpm dev`.
-# An API container (Dockerfile) is added in Sprint 1 week 2 alongside the staging deploy.
+# An API container (Dockerfile) is added in Sprint 2 alongside the Azure staging deploy.
 services:
   db:
     image: postgres:17-alpine
