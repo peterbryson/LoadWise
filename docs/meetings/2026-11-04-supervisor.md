@@ -3,7 +3,7 @@
 ## Attendees
 
 - Peter Bryson
-- Supervisor (also marks the project). TODO: Peter: add name
+- Supervisor (also marks the project).
 
 ## Progress since last meeting
 
