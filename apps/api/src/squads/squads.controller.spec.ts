@@ -178,12 +178,18 @@ describe('squads API', () => {
     it('does not retry on other database errors (500)', async () => {
       prisma.squad.create.mockRejectedValue(new Error('connection lost'));
 
-      await request(app.getHttpServer())
+      const res = await request(app.getHttpServer())
         .post('/squads')
         .set(asCoach)
         .send({ name: 'Belfast Harriers', role: 'COACH' })
         .expect(500);
       expect(prisma.squad.create).toHaveBeenCalledTimes(1);
+      // The global filter (#27) replaces the database error with a generic message.
+      expect(res.body).toEqual({
+        statusCode: 500,
+        error: 'Internal Server Error',
+        message: 'Something went wrong',
+      });
     });
   });
 

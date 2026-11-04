@@ -18,6 +18,30 @@ Template:
 
 ---
 
+## DL-012: One error shape for the API, with validation per route
+
+- Date: 4 Nov 2026
+- Status: Accepted (Peter chose option A on 4 Nov)
+- Context: the Sprint 1 plan asked for a global Zod validation pipe and a consistent error response
+  format (#27). Each route validates against its own schema from `@loadwise/shared`, and unexpected
+  errors used Nest's default handling, with nothing tested to stop internal details reaching the client.
+- Options considered:
+  - **A: keep the Zod pipe per route and add a global exception filter (chosen).** The schema each
+    route uses stays explicit and traceable. One filter gives every error the same shape and turns
+    anything unexpected into a generic 500.
+  - **B: a global pipe with Zod-backed classes** (for example the `nestjs-zod` library). It matches the
+    plan's wording, but needs a new dependency and a wrapper class for every request body.
+- Decision: `HttpExceptionFilter`, registered with `APP_FILTER`, returns
+  `{ statusCode, error, message }` for every error, plus `issues` for validation failures. Any
+  exception that is not an `HttpException` returns 500 "Something went wrong". The server logs only
+  the method, path and error type, because error messages can contain request data (NFR 2).
+- Consequences: clients, including the mobile API client, can rely on one error shape. A 500's
+  log line has no message, so debugging a production failure needs the error type and route, or a
+  reproduction. The plan item is reworded from "global Zod validation pipe" to "Zod validation on
+  every route".
+
+---
+
 ## DL-011: Branching: merge requests for all code, direct pushes allowed for documentation only
 
 - Date: 4 Nov 2026

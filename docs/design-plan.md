@@ -95,7 +95,7 @@ About 25 hours of work and library blocks this week. Do these in order:
 - [ ] **Supervisor meeting, Wed 4 Nov:** show the board and decision log. Ask about ethics turnaround and what testing is allowed without approval. Agree a weekly slot
 - [x] Prisma schema v1: users, squads, memberships with roles, consent, sessions, wellness, injuries, flags. Get the many-to-many membership and consent model right
 - [ ] Docker Compose for Postgres and the API *(Postgres done; the API container comes with the Sprint 2 staging deploy)*
-- [ ] NestJS Firebase ID-token guard, global Zod validation pipe and a consistent error response format *(as of 4 Nov: global Firebase token guard done; the Zod pipe is applied per route, not globally; no shared error response format yet)*
+- [ ] NestJS Firebase ID-token guard, Zod validation on every route and a consistent error response format *(4 Nov: global Firebase token guard done; global error filter on `feat/27-error-format`, #27; validation stays per route, DL-012)*
 - [x] GitLab CI: lint, typecheck, Jest, coverage report and JUnit export
 - [ ] ~~Deploy a health endpoint to Azure staging, automatically from `main`~~ *moved to Sprint 2, week 3 (see `requirements-changes.md`)*
 - [x] Ship **#1 sign in** in the API, as much as is realistic by 8 Nov: a Firebase `TokenVerifier` replacing `RejectAllTokenVerifier`, with valid and invalid token tests *(merged 3 Nov, DL-009; CI green on `main`)*
