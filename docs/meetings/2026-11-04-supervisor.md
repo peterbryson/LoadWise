@@ -17,7 +17,7 @@ Previously only had an idea. Now started building the app.
 
 The dissertation text is written by me.
 
-## Actions (each becomes a GitLab issue: link it)
+## Actions (also in `docs/issue-log.md`; raising a GitLab issue is optional)
 
 - [ ] Keep `docs/ai-usage-log.md` complete for all AI use
 

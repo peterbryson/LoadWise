@@ -11,7 +11,7 @@ There are 25 working weeks from 26 Oct to the **19 Apr 2027** submission. Each w
 
 | Deadline | Date | Weight | Notes |
 | --- | --- | --- | --- |
-| Ethics application | Submit w/c 26 Oct | Gate | Blocks interviews, pilot and SUS testing |
+| Ethics application | Submit w/c 9 Nov (moved from w/c 26 Oct on 4 Nov) | Gate | Blocks interviews, pilot and SUS testing |
 | CSC3032 supervisor meeting | Wed 4 Nov, 14:00 | None | Agree a weekly slot; ask about ethics turnaround |
 | CSC3067 baseline system demo | Mon 16 Nov | 10% of CSC3067 | Other module |
 | CSC3067 final report and code | Mon 7 Dec | 40% of CSC3067 | Other module, clashes with Sprint 3 |
@@ -79,9 +79,9 @@ docs/
 
 About 25 hours of work and library blocks this week. Do these in order:
 
-- [ ] Submit the ethics application, covering interviews (Nov), the pilot and SUS (Sprint 8), and peer usability testing
+- [ ] ~~Submit the ethics application~~ *moved to the start of Sprint 2, week 3 (4 Nov)*
 - [x] Create GitLab issues for all 26 stories, with labels for MoSCoW, requirement (FR/NFR) and story points, plus an issue template with an acceptance criteria section *(done 4 Nov: issues #1 to #26 match the backlog numbers; #26 closed as Won't; story points also set as issue weight)*
-- [ ] Create milestones for Sprints 1 to 8 and set up the issue board columns *(milestones created 4 Nov with stories assigned; board columns not set up yet)*
+- [x] Create milestones for Sprints 1 to 8 and set up the issue board columns *(done 4 Nov: "Sprint board" with To do, In progress and In review columns; non-story work for Sprints 1 and 2 added as task issues #27 to #42)*
 - [x] Protect `main` (no force-push; all code and config through a merge request, only documentation may be pushed directly, DL-011) and add a merge request template with a self-review checklist *(done: `main` protected with force-push off, Maintainers may push; MR template in `.gitlab/`)*
 - [x] Scaffold the monorepo with pnpm and Turborepo (layout above)
 - [x] Create the `docs/` folder and all the log files
@@ -108,6 +108,7 @@ About 25 hours of work and library blocks this week. Do these in order:
 
 #### Week 3 (w/c 9 Nov): Expo app, sign-in and wellness
 
+- [ ] **First:** submit the ethics application, covering interviews (Nov), the pilot and SUS (Sprint 8), and peer usability testing *(moved from Sprint 1 on 4 Nov)*
 - [x] Generate the Expo app in `apps/mobile` (see its README) with the three-tab layout from the Figma V1 design (Today, Trends, Profile) *(done early on 3 Nov, DL-010: all V1 screens on localhost, most as labelled previews)*
 - [ ] Finish **#1 sign in** end to end: Firebase sign-in in the app, token verified by the API, and explicit health-data consent at first-time setup recorded with its history (DL-008, new migration) *(app sign-in done on 3 Nov; consent storage and phone persistence still to do)*
 - [ ] Ship **#5 wellness check**, saved through the API to PostgreSQL, timed under 60 seconds
@@ -174,8 +175,8 @@ About 25 hours of work and library blocks this week. Do these in order:
 #### Week 8 (w/c 14 Dec): exam, then MVP review
 
 - [ ] Revise for the CSC3067 exam on Thu 17 Dec
-- [ ] MVP review with your supervisor (demo `v0.1-mvp`) on 14, 15 or 18 Dec. Minute it, and open an issue for each piece of feedback
-- [ ] Fri 18 to Wed 23 Dec: fix bugs, and log known bugs as `bug` issues
+- [ ] MVP review with your supervisor (demo `v0.1-mvp`) on 14, 15 or 18 Dec. Minute it, and add each piece of feedback to `docs/issue-log.md` (raise a GitLab issue for it if you choose)
+- [ ] Fri 18 to Wed 23 Dec: fix bugs, and log known bugs in `docs/issue-log.md` (raise a GitLab `bug` issue for any you choose to)
 
 #### Week 9 (w/c 21 Dec): Christmas
 
@@ -213,7 +214,7 @@ About 25 hours of work and library blocks this week. Do these in order:
 
 #### Week 13 (w/c 18 Jan)
 
-- [ ] Retrospective on the interim video and its feedback, logged as issues
+- [ ] Retrospective on the interim video and its feedback, logged in `docs/issue-log.md`
 - [ ] **January re-plan:** velocity so far, fix the Should list (above), re-baseline Sprints 4 to 8
 - [ ] **Ethics check:** if not approved by now, switch to the fallback agreed with your supervisor (for example peer usability testing with the study group, plus synthetic-data evaluation) and record it as a risk response
 - [ ] Flag spike: fixed thresholds vs personal-baseline z-scores on synthetic data. Record false-alarm and miss rates in the decision log

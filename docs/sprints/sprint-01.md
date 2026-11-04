@@ -34,19 +34,21 @@ Project management, set up 4 Nov:
   issue weight). Completed acceptance criteria are ticked on #1 and #2.
 - Milestones for Sprints 1 to 8 with stories assigned. The issues were created on 4 Nov, so the Sprint 1
   burndown starts on 4 Nov, not 26 Oct.
+- "Sprint board" with To do, In progress and In review columns, and the remaining Sprint 1 and Sprint 2
+  non-story work as task issues #27 to #42 (labels `task`, `spike`, `bug`).
 
 Not done:
 
 - #1: explicit health-data consent at first-time setup (DL-008) and keeping the sign-in on the phone.
 - #2: no squad member list yet.
 - Azure staging: moved to Sprint 2.
-- Issue board columns.
+- Ethics application: moved to the start of Sprint 2 (4 Nov).
 - Real PostgreSQL integration tests: the API tests fake the database, so constraints,
   transactions and real queries are not yet tested.
 
 Design work: athlete app screens V1 in Figma, light and dark (see `docs/design/README.md`). Not user tested.
 
-Known issues to log:
+Known issues (now tracked in `docs/issue-log.md`):
 
 - `SessionType` is uppercase in Prisma (`TRAINING`) and lowercase in Zod (`training`). Fix
   decided: make `SessionTypeSchema` uppercase, matching Prisma and `StaffRoleSchema`, so no

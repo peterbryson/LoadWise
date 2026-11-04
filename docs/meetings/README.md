@@ -9,7 +9,7 @@ Write it the same day.
 ## Attendees
 ## Progress since last meeting
 ## Feedback received
-## Actions (each becomes a GitLab issue: link it)
-- [ ] #__
+## Actions (also add each to `docs/issue-log.md`; raising a GitLab issue is optional)
+- [ ] 
 ## How previous feedback was acted on
 ```

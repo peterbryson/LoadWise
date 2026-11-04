@@ -152,6 +152,7 @@ This project follows the process in [`docs/design-plan.md`](docs/design-plan.md)
 | [`docs/decision-log.md`](docs/decision-log.md) | Technical decisions and spike outcomes |
 | [`docs/risk-register.md`](docs/risk-register.md) | Risks, reviewed every sprint |
 | [`docs/requirements-changes.md`](docs/requirements-changes.md) | Scope and requirement changes |
+| [`docs/issue-log.md`](docs/issue-log.md) | Bugs, known gaps and follow-up actions, reviewed by Peter (GitLab issue optional) |
 | [`docs/ai-usage-log.md`](docs/ai-usage-log.md) | AI usage log (dissertation appendix) |
 | [`docs/sprints/`](docs/sprints/) | Sprint plans, reviews, retrospectives |
 | [`docs/meetings/`](docs/meetings/) | Supervisor, study group, interview notes |
