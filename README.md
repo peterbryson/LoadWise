@@ -133,8 +133,9 @@ This project follows the process in [`docs/design-plan.md`](docs/design-plan.md)
 - **Definition of Done:** merged through a merge request from a feature branch, CI green (including
   coverage and error-handling tests), deployed to staging. Staging does not exist yet (Sprint 2),
   so that item is outstanding for every story so far.
-- **Branches:** `feat/<issue>-short-name`, `fix/...`, `refactor/...`, `docs/...`. `main` changes
-  only through a merge request. TODO: Peter: confirm branch protection is switched on in GitLab.
+- **Branches:** `feat/<issue>-short-name`, `fix/...`, `refactor/...`, `docs/...`. Everything except
+  documentation-only changes (files in `docs/` and README files) goes through a merge request from its branch. Documentation-only changes may be
+  pushed straight to `main`. `main` is protected against force-pushes (DL-011).
 - **Commit messages:** conventional style, e.g. `feat(analytics): add EWMA ACWR (#7)`,
   `refactor(api): extract consent guard`.
 - **Test names start with their requirement ID**, e.g. `describe('FR2: ...')`, so CI's JUnit

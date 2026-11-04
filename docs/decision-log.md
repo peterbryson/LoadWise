@@ -18,6 +18,29 @@ Template:
 
 ---
 
+## DL-011: Branching: merge requests for all code, direct pushes allowed for documentation only
+
+- Date: 4 Nov 2026
+- Status: Accepted (Peter's decision, 4 Nov)
+- Context: The Sprint 1 plan said to protect `main` so it changes only through merge requests. On
+  4 Nov GitLab showed `main` protected with force-push off, but Maintainers allowed to push directly.
+- Options considered:
+  - **Merge requests only:** every change, including docs, is checked by CI before it reaches `main`,
+    and the history shows one consistent workflow. Costs a branch and an MR for small doc edits.
+  - **Merge requests for everything except documentation-only changes (files in `docs/` and README files); direct pushes allowed for those
+    (chosen):** small doc and record updates stay quick. A direct push is only checked by CI after it
+    lands on `main`, and the rule depends on Peter following it rather than on GitLab enforcing it.
+- Decision: Peter keeps the right to push to `main`, but only for documentation-only changes. Any
+  commit touching code, tests, config, CI or dependencies uses a branch and a merge request.
+  Force-pushing to `main` stays disabled.
+- Consequences: The Definition of Done (reviewed merge request, CI green) still applies to every story.
+  If a direct push breaks CI on `main`, fix it before other work.
+  Reason in Peter's words: "I should be able to push to main if I want, when working on features I will
+  take a branch and have a merge request then", narrowed the same day to "only changes to docs should be
+  allowed for direct pushes to main". TODO: Peter: add any further reason for Ch2.
+
+---
+
 ## DL-010: First app UI: Expo web on localhost, with labelled sample-data previews
 
 - Date: 3 Nov 2026

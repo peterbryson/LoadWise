@@ -1,7 +1,7 @@
 # LoadWise: Delivery Plan
 
 > CSC3032 Software Engineering Project · Peter Bryson (40405392)
-> Last updated: 3 Nov 2026 · Source of truth for weekly delivery. Update it at every sprint review.
+> Last updated: 4 Nov 2026 · Source of truth for weekly delivery. Update it at every sprint review.
 
 There are 25 working weeks from 26 Oct to the **19 Apr 2027** submission. Each week lists what ships, what gets set up and which dissertation section gets written, so every rubric line has evidence by April. Work follows two-week Scrum sprints. Tick items off, and move anything that slips into the next week with a note in the sprint review.
 
@@ -80,9 +80,9 @@ docs/
 About 25 hours of work and library blocks this week. Do these in order:
 
 - [ ] Submit the ethics application, covering interviews (Nov), the pilot and SUS (Sprint 8), and peer usability testing
-- [ ] Create GitLab issues for all 26 stories, with labels for MoSCoW, requirement (FR/NFR) and story points, plus an issue template with an acceptance criteria section *(issue template done)*
-- [ ] Create milestones for Sprints 1 to 8 and set up the issue board columns
-- [ ] Protect `main` (merge via merge request only) and add a merge request template with a self-review checklist *(MR template done)*
+- [x] Create GitLab issues for all 26 stories, with labels for MoSCoW, requirement (FR/NFR) and story points, plus an issue template with an acceptance criteria section *(done 4 Nov: issues #1 to #26 match the backlog numbers; #26 closed as Won't; story points also set as issue weight)*
+- [ ] Create milestones for Sprints 1 to 8 and set up the issue board columns *(milestones created 4 Nov with stories assigned; board columns not set up yet)*
+- [x] Protect `main` (no force-push; all code and config through a merge request, only documentation may be pushed directly, DL-011) and add a merge request template with a self-review checklist *(done: `main` protected with force-push off, Maintainers may push; MR template in `.gitlab/`)*
 - [x] Scaffold the monorepo with pnpm and Turborepo (layout above)
 - [x] Create the `docs/` folder and all the log files
 - [x] Decision log entry 1: Firebase vs your own NestJS and Postgres backend (Ch4 tech justification)
@@ -94,11 +94,11 @@ About 25 hours of work and library blocks this week. Do these in order:
 
 - [ ] **Supervisor meeting, Wed 4 Nov:** show the board and decision log. Ask about ethics turnaround and what testing is allowed without approval. Agree a weekly slot
 - [x] Prisma schema v1: users, squads, memberships with roles, consent, sessions, wellness, injuries, flags. Get the many-to-many membership and consent model right
-- [ ] Docker Compose for Postgres and the API
-- [ ] NestJS Firebase ID-token guard, global Zod validation pipe and a consistent error response format
+- [ ] Docker Compose for Postgres and the API *(Postgres done; the API container comes with the Sprint 2 staging deploy)*
+- [ ] NestJS Firebase ID-token guard, global Zod validation pipe and a consistent error response format *(as of 4 Nov: global Firebase token guard done; the Zod pipe is applied per route, not globally; no shared error response format yet)*
 - [x] GitLab CI: lint, typecheck, Jest, coverage report and JUnit export
 - [ ] ~~Deploy a health endpoint to Azure staging, automatically from `main`~~ *moved to Sprint 2, week 3 (see `requirements-changes.md`)*
-- [ ] Ship **#1 sign in** in the API, as much as is realistic by 8 Nov: a Firebase `TokenVerifier` replacing `RejectAllTokenVerifier`, with valid and invalid token tests *(no Firebase verifier in the repo as of 3 Nov)*
+- [x] Ship **#1 sign in** in the API, as much as is realistic by 8 Nov: a Firebase `TokenVerifier` replacing `RejectAllTokenVerifier`, with valid and invalid token tests *(merged 3 Nov, DL-009; CI green on `main`)*
 - [ ] **#2 create a squad and invite**, with valid and invalid input tests *(create and join by invite code merged; the squad member list moves to Sprint 3, week 7)*
 - [ ] Rewrite the NFRs with measurable targets, and **add a sustainability or wider-impact NFR** (for example LLM tokens per athlete per week, or data per sync)
 - [ ] Wireframes and a navigation map for the athlete flows (log session, wellness check), in `docs/design/` (Ch4 UI/UX) *(Figma V1 screens in light and dark themes, linked from `docs/design/README.md`; navigation map not yet written)*
@@ -108,7 +108,7 @@ About 25 hours of work and library blocks this week. Do these in order:
 
 #### Week 3 (w/c 9 Nov): Expo app, sign-in and wellness
 
-- [ ] Generate the Expo app in `apps/mobile` (see its README) with the three-tab layout from the Figma V1 design (Today, Trends, Profile) *(started early on 3 Nov, DL-010: all V1 screens on localhost, most as labelled previews)*
+- [x] Generate the Expo app in `apps/mobile` (see its README) with the three-tab layout from the Figma V1 design (Today, Trends, Profile) *(done early on 3 Nov, DL-010: all V1 screens on localhost, most as labelled previews)*
 - [ ] Finish **#1 sign in** end to end: Firebase sign-in in the app, token verified by the API, and explicit health-data consent at first-time setup recorded with its history (DL-008, new migration) *(app sign-in done on 3 Nov; consent storage and phone persistence still to do)*
 - [ ] Ship **#5 wellness check**, saved through the API to PostgreSQL, timed under 60 seconds
 - [ ] Deploy the API (health endpoint first) to Azure staging, automatically from `main` *(moved from Sprint 1; until it exists, "deployed to staging" stays an outstanding Definition of Done item)*
