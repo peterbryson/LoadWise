@@ -1,6 +1,6 @@
 # Sprint 1: monorepo, API, data model, auth, CI
 
-- Dates: 26 Oct to 8 Nov 2026
+- Dates: 26 Oct to 10 Nov 2026 (extended from 8 Nov on 9 Nov to finish the remaining Sprint 1 tasks)
 - Sprint goal: a deployed, tested API skeleton with sign-in and squads, and the project management backbone in place.
 - Committed stories: #1 sign in (3), #2 create a squad and invite (5), plus estimated setup tasks.
 

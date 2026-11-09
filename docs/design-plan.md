@@ -73,7 +73,7 @@ docs/
 **Delivery order (3 Nov, DL-005):** build athlete-first, one complete feature at a time (API, PostgreSQL and app screen together), instead of finishing the whole backend before the screens. The squad and staff stories (#2, #3, #8, #10, #11) are still Must stories for the MVP; only their order changes. See `requirements-changes.md`.
 **Fallback, decided now:** if you are behind on 6 Dec, #10 ships as a simple list of consenting athletes with their flags and reasons (no trend charts), and #6 uses a simplified queue. Consent (#3) and role-based access (#11) are never cut. Record any cut in the decision log.
 
-### Sprint 1: monorepo, API, data model, auth, CI (26 Oct to 8 Nov)
+### Sprint 1: monorepo, API, data model, auth, CI (26 Oct to 10 Nov, extended by two days on 9 Nov)
 
 #### Week 1 (w/c 26 Oct): set up the backbone
 
@@ -104,7 +104,7 @@ About 25 hours of work and library blocks this week. Do these in order:
 - [ ] Wireframes and a navigation map for the athlete flows (log session, wellness check), in `docs/design/` (Ch4 UI/UX) *(Figma V1 screens in light and dark themes, linked from `docs/design/README.md`; navigation map not yet written)*
 - [ ] Sprint 1 review: burndown, **measured velocity**, retrospective, and re-plan Sprints 2 and 3 if needed
 
-### Sprint 2: athlete app, logging and offline sync (9 to 22 Nov)
+### Sprint 2: athlete app, logging and offline sync (11 to 22 Nov, shortened by two days on 9 Nov)
 
 #### Week 3 (w/c 9 Nov): Expo app, sign-in and wellness
 
