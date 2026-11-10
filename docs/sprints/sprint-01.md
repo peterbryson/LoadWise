@@ -140,6 +140,7 @@ inside one sprint**, so velocity measures real progress.
 ### Actions
 
 - Submit the ethics application first thing in Sprint 2 (#33).
-- Revoke and replace the tokens in the mirroring note; record the GitHub mirror as DL-013.
+- Replace the tokens in the mirroring note and keep credentials out of plain-text files (done 10 Nov). The
+  GitHub mirror is Peter's personal portfolio copy, not part of the project, so it needs no decision log entry.
 - Move #1 to Sprint 2 and #2 to Sprint 3, and close the Sprint 1 milestone.
 - Watch runner failures in Sprint 2; if they continue, record the options in the decision log.
