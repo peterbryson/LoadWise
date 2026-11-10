@@ -101,7 +101,7 @@ About 25 hours of work and library blocks this week. Do these in order:
 - [x] Ship **#1 sign in** in the API, as much as is realistic by 8 Nov: a Firebase `TokenVerifier` replacing `RejectAllTokenVerifier`, with valid and invalid token tests *(merged 3 Nov, DL-009; CI green on `main`)*
 - [ ] **#2 create a squad and invite**, with valid and invalid input tests *(create and join by invite code merged; the squad member list moves to Sprint 3, week 7)*
 - [ ] Rewrite the NFRs with measurable targets, and **add a sustainability or wider-impact NFR** (for example LLM tokens per athlete per week, or data per sync)
-- [ ] Wireframes and a navigation map for the athlete flows (log session, wellness check), in `docs/design/` (Ch4 UI/UX) *(Figma V1 screens in light and dark themes, linked from `docs/design/README.md`; navigation map not yet written)*
+- [x] Wireframes and a navigation map for the athlete flows (log session, wellness check), in `docs/design/` (Ch4 UI/UX) *(Figma V1 screens in light and dark themes; navigation map in `docs/design/navigation-map.md`, 10 Nov)*
 - [ ] Sprint 1 review: burndown, **measured velocity**, retrospective, and re-plan Sprints 2 and 3 if needed
 
 ### Sprint 2: athlete app, logging and offline sync (11 to 22 Nov, shortened by two days on 9 Nov)

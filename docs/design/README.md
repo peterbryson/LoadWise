@@ -3,9 +3,11 @@
 Diagrams kept as code (Mermaid or PlantUML) so they version with the system and render at
 full resolution in the dissertation. Export PNG/SVG for the report.
 
-## What exists (3 Nov 2026)
+## What exists (10 Nov 2026)
 
 - [`erd.md`](erd.md): entity relationship diagram for data model v1, drawn from the Prisma schema on 2 Nov.
+- [`navigation-map.md`](navigation-map.md): athlete app screen map and daily logging flow, drawn from the
+  Expo Router routes and Figma V1 on 10 Nov, with each screen's story and status.
 - Athlete app screens V1 in Figma (below), built in [`apps/mobile`](../../apps/mobile/README.md) and viewable on
   localhost (DL-010). Differences from Figma: Preview banners on sample-data screens, a Squads section and
   Preview tools in Profile, and a visible unchecked state for the consent checkbox.
@@ -13,7 +15,6 @@ full resolution in the dissertation. Export PNG/SVG for the report.
 ## Planned (see `docs/design-plan.md`)
 
 - `architecture.md`: high-level component diagram (week 7)
-- `navigation-map.md`: athlete flows, based on the Figma V1 tabs (not yet written)
 - Staff overview wireframes (week 5)
 - `sequence-*.md`: flag raised, AI assistant tool calling (Sprints 3 and 5)
 - `use-cases/`: use case descriptions for the core flows
@@ -59,9 +60,8 @@ Design changes still to make:
 
 ## Current architecture (starting point)
 
-As of 3 Nov only the API, PostgreSQL and `packages/analytics` exist. The mobile app and
-dashboard are not built yet, and the API does not verify Firebase tokens yet (it rejects every
-token until #1).
+As of 10 Nov the API (verifying Firebase ID tokens), PostgreSQL, `packages/analytics` and the Expo
+mobile app exist. The staff dashboard is not built yet (Sprint 7, Should).
 
 ```mermaid
 flowchart LR
