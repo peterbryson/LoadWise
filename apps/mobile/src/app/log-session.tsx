@@ -15,10 +15,10 @@ import { TextField } from '@/components/TextField';
 import { useTheme } from '@/theme/theme';
 
 const types = [
-  { value: 'training', label: 'Training' },
-  { value: 'match', label: 'Match' },
-  { value: 'gym', label: 'Gym' },
-  { value: 'other', label: 'Other' },
+  { value: 'TRAINING', label: 'Training' },
+  { value: 'MATCH', label: 'Match' },
+  { value: 'GYM', label: 'Gym' },
+  { value: 'OTHER', label: 'Other' },
 ] as const;
 
 const durations = [
@@ -51,7 +51,7 @@ const rpeAnchors: Partial<Record<number, string>> = {
 export default function LogSessionScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const [type, setType] = useState<SessionType>('training');
+  const [type, setType] = useState<SessionType>('TRAINING');
   const [duration, setDuration] = useState<string | undefined>();
   const [otherMinutes, setOtherMinutes] = useState('');
   const [rpe, setRpe] = useState<number | undefined>();

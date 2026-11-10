@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
 /** FR 1: a logged training session or match. One schema validates on the client and the API. */
-export const SessionTypeSchema = z.enum(['training', 'match', 'gym', 'other']);
+// Upper case to match the Prisma SessionType enum (and StaffRoleSchema), so values pass between
+// client, API and database with no mapping. A test in apps/api checks the two stay in step.
+export const SessionTypeSchema = z.enum(['TRAINING', 'MATCH', 'GYM', 'OTHER']);
 
 export const SessionLogSchema = z.object({
   type: SessionTypeSchema,
