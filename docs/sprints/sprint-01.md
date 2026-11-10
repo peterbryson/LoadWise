@@ -64,7 +64,7 @@ Planning change: the remaining MVP work is reordered athlete-first (DL-005; see
 
 Held on 10 Nov after the two-day extension (the planned review on Fri 6 Nov did not happen).
 Drafted by Claude Code at Peter's request from GitLab, CI and the repository records.
-TODO: Peter: confirm or edit, then remove this line.
+Confirmed by Peter on 10 Nov.
 
 ### Delivered vs committed
 
@@ -104,7 +104,7 @@ neither story closed. Only one task closed before the planned end date of 8 Nov;
 ## Retrospective
 
 Drafted by Claude Code at Peter's request from the sprint's records and decisions.
-TODO: Peter: confirm or edit, especially anything you would describe differently, then remove this line.
+Confirmed by Peter on 10 Nov.
 
 ### What went well
 
