@@ -157,6 +157,7 @@ This project follows the process in [`docs/design-plan.md`](docs/design-plan.md)
 | [`docs/ai-usage-log.md`](docs/ai-usage-log.md) | AI usage log (dissertation appendix) |
 | [`docs/sprints/`](docs/sprints/) | Sprint plans, reviews, retrospectives |
 | [`docs/meetings/`](docs/meetings/) | Supervisor, study group, interview notes |
+| [`docs/research/interview-guide.md`](docs/research/interview-guide.md) | Interview goals, method and guides for athletes, coaches and physios |
 | [`docs/design/`](docs/design/) | Architecture, ERD, UML, wireframes |
 
 ## Disclaimer
