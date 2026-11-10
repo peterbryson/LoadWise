@@ -108,7 +108,7 @@ About 25 hours of work and library blocks this week. Do these in order:
 
 #### Week 3 (w/c 9 Nov): Expo app, sign-in and wellness
 
-- [ ] **First:** submit the ethics application, covering interviews (Nov), the pilot and SUS (Sprint 8), and peer usability testing *(moved from Sprint 1 on 4 Nov)*
+- [x] **First:** submit the ethics application, covering interviews (Nov), the pilot and SUS (Sprint 8), and peer usability testing *(moved from Sprint 1 on 4 Nov; submitted to the supervisor on 10 Nov, approval pending)*
 - [x] Generate the Expo app in `apps/mobile` (see its README) with the three-tab layout from the Figma V1 design (Today, Trends, Profile) *(done early on 3 Nov, DL-010: all V1 screens on localhost, most as labelled previews)*
 - [ ] Finish **#1 sign in** end to end: Firebase sign-in in the app, token verified by the API, and explicit health-data consent at first-time setup recorded with its history (DL-008, new migration) *(app sign-in done on 3 Nov; consent storage and phone persistence still to do)*
 - [ ] Ship **#5 wellness check**, saved through the API to PostgreSQL, timed under 60 seconds
