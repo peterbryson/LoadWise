@@ -18,6 +18,31 @@ Template:
 
 ---
 
+## DL-013: Move the repository to the EEECS Software Engineering GitLab
+
+- Date: 14 Nov 2026
+- Status: Proposed
+- Context: module staff said the CSC3032 project must use the Software Engineering GitLab
+  (`gitlab-se.eeecs.qub.ac.uk`), not the main school GitLab (`gitlab.eeecs.qub.ac.uk`) where the
+  project was created on 26 Oct. The backlog, sprint milestones and merge request history are process
+  evidence for the interim video and Ch2, so they had to move with the code.
+- Options considered:
+  - **Push the repository with `git push --mirror`.** Keeps all commits, but leaves behind issues,
+    milestones, labels, the board and merge requests.
+  - **GitLab direct transfer between instances.** Moves everything, but needs a personal access
+    token for the old instance.
+  - **GitLab project export and import (chosen).** Moves the repository, issues, comments, milestones,
+    labels, the board and merge requests in one file. It does not carry CI variables, runners, push
+    mirrors or job logs.
+- Decision: exported the project from `gitlab.eeecs.qub.ac.uk/40405392/loadwise` and imported it as
+  `gitlab-se.eeecs.qub.ac.uk/40405392/loadwise` (private). The import matched the old project: 47
+  commits (head `f7e5144`), 42 issues (32 open, 10 closed), 8 milestones, 27 labels, 7 merged merge
+  requests, 1 board and 60 issue comments. The local `origin` now points to the new project.
+- Consequences: the self-hosted runner (DL-003) and the push mirror to GitHub must be set up again on
+  the new project. Pipeline history and job logs before 14 Nov stay on the old project only, so it
+  should be archived rather than deleted. Issue and merge request links in old notes point to the old
+  instance.
+
 ## DL-012: One error shape for the API, with validation per route
 
 - Date: 4 Nov 2026
