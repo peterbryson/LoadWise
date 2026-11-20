@@ -9,7 +9,7 @@
 ## Review (20 Nov)
 
 Held on 20 Nov, two days before the planned end. Drafted by Claude Code at Peter's request from GitLab,
-CI and the repository records. Peter to confirm.
+CI and the repository records. Confirmed by Peter on 20 Nov.
 
 ### Delivered vs committed
 
@@ -55,8 +55,7 @@ then #1, #5 and #4 closed between 12:59 and 15:59. The repository shows one comm
 
 ## Retrospective
 
-Drafted by Claude Code at Peter's request from the sprint's records. Peter to confirm, and to add his
-own reflections where marked.
+Drafted by Claude Code at Peter's request from the sprint's records. Confirmed by Peter on 20 Nov.
 
 ### What went well
 
@@ -74,8 +73,8 @@ own reflections where marked.
 
 - **Nothing was closed for nine days, then everything on one day.** From 11 to 19 Nov there was one
   commit; on 20 Nov there were 35, using several Claude Code workers in parallel. The burndown is a cliff,
-  not a slope, and Sprint 1 had the same pattern. TODO: Peter: why 11 to 19 Nov went (coursework, work,
-  the GitLab move?).
+  not a slope, and Sprint 1 had the same pattern. In Peter's words: he was busy with other modules and with
+  the move to the new GitLab.
 - **Most of the code was written by AI in one session.** It is reviewed and tested, but Peter has to be
   able to explain every merged change in the demo and viva. Reading through !8 to !14 is part of the
   Sprint 3 plan.
