@@ -134,7 +134,28 @@ curl http://localhost:3000/health         # should return {"status":"ok", ...}
 ```
 
 The container applies committed migrations on start (`prisma migrate deploy`), reads its settings
-from `apps/api/.env`, and reaches Postgres as `db`. Staging runs this image on Azure Container Apps (DL-014); the automatic deploy from `main` is still to come.
+from `apps/api/.env`, and reaches Postgres as `db`.
+
+### Deploy to staging
+
+Staging runs this image on Azure Container Apps in Norway East (DL-014):
+https://loadwise-api.ashygrass-5399f68d.norwayeast.azurecontainerapps.io/health
+
+Every pipeline on `main` builds the image and pushes it to Docker Hub as
+`peterbryson/loadwise-api:<short commit hash>` (the `api-image` job). Deploying it is one command
+in Azure Cloud Shell, because the university's Microsoft tenant does not allow a CI login for Azure
+(DL-015):
+
+```bash
+az account set --subscription "Azure for Students"
+TAG=<short commit hash from the pipeline>
+az containerapp update -g loadwise-staging -n loadwise-api \
+  --image docker.io/peterbryson/loadwise-api:$TAG --set-env-vars DEPLOYED_IMAGE=$TAG -o none
+curl -s https://loadwise-api.ashygrass-5399f68d.norwayeast.azurecontainerapps.io/health
+```
+
+The first request after an idle period takes a few seconds, because staging scales to zero.
+The container applies any new migrations to the staging database when it starts.
 
 ---
 
@@ -144,8 +165,7 @@ This project follows the process in [`docs/design-plan.md`](docs/design-plan.md)
 
 - **Scrum, two-week sprints.** Backlog = GitLab issues (MoSCoW, story points, one milestone per sprint).
 - **Definition of Done:** merged through a merge request from a feature branch, CI green (including
-  coverage and error-handling tests), deployed to staging. Staging does not exist yet (Sprint 2),
-  so that item is outstanding for every story so far.
+  coverage and error-handling tests), deployed to staging (see "Deploy to staging").
 - **Branches:** `feat/<issue>-short-name`, `fix/...`, `refactor/...`, `docs/...`. Everything except
   documentation-only changes (files in `docs/` and README files) goes through a merge request from its branch. Documentation-only changes may be
   pushed straight to `main`. `main` is protected against force-pushes (DL-011).

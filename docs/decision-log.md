@@ -18,6 +18,34 @@ Template:
 
 ---
 
+## DL-015: CI publishes the staging image; deploying it is one manual command
+
+- Date: 20 Nov 2026
+- Status: Accepted (proposed by Claude Code; Peter allowed Claude to make the recommended decision on 20 Nov)
+- Context: #34 asks for CI to deploy `main` to staging. The deploy job needs its own Azure login (a
+  service principal). Creating one failed with "Insufficient privileges": the QUB Microsoft tenant
+  does not let students register applications. Without it, GitLab cannot change the Container App.
+- Options considered:
+  - **Use my own Azure login on the laptop runner.** Fully automatic, but my personal credentials
+    would sit on the runner and be usable by any job, and the login expires and has to be renewed.
+  - **Ask QUB IT, through the supervisor, for a service principal scoped to `loadwise-staging`.**
+    The proper fix, but out of my control and probably slow.
+  - **CI builds and publishes the image on every `main` pipeline; I deploy it with one command
+    (chosen for now).** Every deployed image is built and tested by CI from a known commit, and the
+    only manual step is choosing to release it. It does not meet "CI deploys `main`" as written.
+- Decision: the `api-image` CI job builds the image on every branch (so a broken Dockerfile fails
+  the merge request) and, on `main`, pushes it to Docker Hub tagged with the commit hash and
+  `main`. Deploying is `az containerapp update` with that tag in Azure Cloud Shell (README).
+  The image is built with Kaniko, which needs no Docker daemon, so the runner stays unprivileged.
+  Ask for a service principal at the next supervisor meeting.
+- Consequences: staging can lag behind `main` until I deploy, so the Definition of Done reads
+  "deployed to staging" as "the merged commit's image is running on staging", checked with the
+  `DEPLOYED_IMAGE` setting. #34's "CI deploys `main`" criterion stays open until a service
+  principal exists. Kaniko's original project was archived by Google in 2025; the pinned version
+  still works, but if it stops working the job moves to Docker-in-Docker or a maintained fork.
+
+---
+
 ## DL-014: Host staging on Azure Container Apps, scaling to zero
 
 - Date: 20 Nov 2026
