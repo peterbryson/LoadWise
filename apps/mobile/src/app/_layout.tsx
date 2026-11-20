@@ -39,6 +39,7 @@ function Navigator() {
         <Stack.Screen name="setup" />
         <Stack.Screen name="wellness" options={{ presentation: 'modal' }} />
         <Stack.Screen name="log-session" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="sessions" />
         <Stack.Screen name="flag" />
       </Stack>
     </>

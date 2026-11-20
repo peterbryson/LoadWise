@@ -151,3 +151,26 @@ describe('FR1: wellness check call (#5)', () => {
     expect((await caught(client.saveWellness(check))).message).toBe('You have already checked in today');
   });
 });
+
+describe('FR1: session calls (#4)', () => {
+  const session = { type: 'TRAINING' as const, date: '2026-11-20', durationMinutes: 60, rpe: 7 };
+
+  it('posts a session with the token', async () => {
+    const { client, fetchFn } = clientReturning(jsonResponse(201, { id: 's1', ...session, load: 420 }));
+
+    await expect(client.logSession(session)).resolves.toEqual({ id: 's1', ...session, load: 420 });
+    expect(fetchFn).toHaveBeenCalledWith('http://api.test/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer id-token' },
+      body: JSON.stringify(session),
+    });
+  });
+
+  it('reads recent sessions from GET /sessions', async () => {
+    const list = [{ id: 's1', ...session, load: 420 }];
+    const { client, fetchFn } = clientReturning(jsonResponse(200, list));
+
+    await expect(client.recentSessions()).resolves.toEqual(list);
+    expect(fetchFn).toHaveBeenCalledWith('http://api.test/sessions', expect.objectContaining({ method: 'GET' }));
+  });
+});

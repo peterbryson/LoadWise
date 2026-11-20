@@ -1,5 +1,5 @@
 import { HEALTH_DATA_NOTICE_VERSION } from '@loadwise/shared';
-import type { CreateSquad, StaffRole, WellnessCheck } from '@loadwise/shared';
+import type { CreateSquad, SessionLog, StaffRole, WellnessCheck } from '@loadwise/shared';
 
 /** An API failure with a message that is safe to show on screen. */
 export class ApiError extends Error {
@@ -37,6 +37,12 @@ export interface Me {
 /** A saved wellness check, from `POST /wellness`. */
 export interface SavedWellness extends WellnessCheck {
   id: string;
+}
+
+/** A saved session, from `POST /sessions` and `GET /sessions`. `load` is RPE × minutes (AU). */
+export interface SavedSession extends SessionLog {
+  id: string;
+  load: number;
 }
 
 interface ApiClientOptions {
@@ -96,6 +102,10 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
       request<Me>('POST', '/me/health-consent', { noticeVersion: HEALTH_DATA_NOTICE_VERSION }),
     /** #5: the daily wellness check. 409 if today's check-in is already saved. */
     saveWellness: (input: WellnessCheck) => request<SavedWellness>('POST', '/wellness', input),
+    /** #4: log a training session or match. */
+    logSession: (input: SessionLog) => request<SavedSession>('POST', '/sessions', input),
+    /** #4 AC3, AC4: the athlete's recent sessions, newest first (the API's default of 20). */
+    recentSessions: () => request<SavedSession[]>('GET', '/sessions'),
   };
 }
 
