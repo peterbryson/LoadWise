@@ -18,6 +18,34 @@ Template:
 
 ---
 
+## DL-014: Host staging on Azure Container Apps, scaling to zero
+
+- Date: 20 Nov 2026
+- Status: Proposed (drafted by Claude Code at Peter's request; Peter to accept or change it before the
+  Azure resources are created)
+- Context: #34 deploys the API to Azure UK South staging from `main`. The API now builds as one
+  container image (`apps/api/Dockerfile`). NFR 5.3 asks that staging scales to zero replicas when
+  idle and that all hosting stays within the Azure for Students credit. NFR 3.5 asks for 99% monthly
+  availability during the pilot.
+- Options considered:
+  - **Azure Container Apps (proposed):** runs the same image, can scale to zero replicas, so an idle
+    staging API costs close to nothing, and HTTPS is included. The cost is a cold start of a few
+    seconds on the first request after an idle period, which affects the first p95 sample in a k6 run
+    (NFR 3.1) unless the test warms it up first.
+  - **Azure App Service (Linux, container):** familiar and always on, so no cold starts, but the plans
+    that stay on bill for every hour whether used or not, which works against NFR 5.3 and the credit.
+  - **A virtual machine running Docker Compose:** full control, but patching, TLS and uptime become my
+    job, and it bills continuously.
+- Decision (proposed): Azure Container Apps in UK South for the API, with minimum replicas 0 for
+  staging; PostgreSQL in Azure Database for PostgreSQL Flexible Server on the smallest burstable tier.
+  The deploy job is added to CI once the resources and CI variables exist.
+- Consequences: staging cost is mostly the database, which also bills while idle, so it may be stopped
+  between test sessions, and the cost is recorded at each sprint review (NFR 5.3). Load tests must warm
+  the API first. For the March pilot, minimum replicas can be raised to 1 so the first request is never
+  slow. The deploy job runs on the laptop runner (DL-003), so deploys only happen while it is on.
+
+---
+
 ## DL-013: Move the repository to the EEECS Software Engineering GitLab
 
 - Date: 14 Nov 2026

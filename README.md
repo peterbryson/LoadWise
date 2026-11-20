@@ -123,6 +123,19 @@ the same commit as any dependency change.
 Check it works: `curl http://localhost:3000/health` should return `{"status":"ok", ...}`, and
 http://localhost:8081 should show the sign-in screen. Every other API route needs a Firebase ID token.
 
+### Run the API in Docker
+
+The API also builds as a container image (`apps/api/Dockerfile`), the same image the Azure staging
+deploy will use (#34, DL-014). Stop `pnpm dev` first, because both use port 3000.
+
+```bash
+docker compose --profile api up --build   # builds the image, starts Postgres and the API
+curl http://localhost:3000/health         # should return {"status":"ok", ...}
+```
+
+The container applies committed migrations on start (`prisma migrate deploy`), reads its settings
+from `apps/api/.env`, and reaches Postgres as `db`. The staging deploy from `main` is still to come.
+
 ---
 
 ## How we work

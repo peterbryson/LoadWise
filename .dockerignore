@@ -1,0 +1,16 @@
+# Keep the API image build context small and free of secrets.
+**/node_modules
+**/dist
+**/coverage
+**/reports
+**/.turbo
+.pnpm-store
+.git
+**/.env
+**/.env.*
+!**/.env.example
+docs
+# The mobile app is not part of the API image, but its package.json must stay: the workspace
+# lockfile lists it, and pnpm install --frozen-lockfile checks every workspace manifest.
+apps/mobile/*
+!apps/mobile/package.json
