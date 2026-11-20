@@ -21,28 +21,37 @@ Template:
 ## DL-014: Host staging on Azure Container Apps, scaling to zero
 
 - Date: 20 Nov 2026
-- Status: Proposed (drafted by Claude Code at Peter's request; Peter to accept or change it before the
-  Azure resources are created)
+- Status: Accepted (options drafted by Claude Code; Peter chose Container Apps on 20 Nov)
 - Context: #34 deploys the API to Azure UK South staging from `main`. The API now builds as one
-  container image (`apps/api/Dockerfile`). NFR 5.3 asks that staging scales to zero replicas when
-  idle and that all hosting stays within the Azure for Students credit. NFR 3.5 asks for 99% monthly
-  availability during the pilot.
+  container image (`apps/api/Dockerfile`), checked locally on 20 Nov (`GET /health` returned ok).
+  NFR 5.3 asks that staging scales to zero replicas when idle and that all hosting stays within the
+  Azure for Students credit (USD 100 for 12 months). NFR 3.5 asks for 99% monthly availability
+  during the pilot.
 - Options considered:
-  - **Azure Container Apps (proposed):** runs the same image, can scale to zero replicas, so an idle
-    staging API costs close to nothing, and HTTPS is included. The cost is a cold start of a few
-    seconds on the first request after an idle period, which affects the first p95 sample in a k6 run
-    (NFR 3.1) unless the test warms it up first.
-  - **Azure App Service (Linux, container):** familiar and always on, so no cold starts, but the plans
-    that stay on bill for every hour whether used or not, which works against NFR 5.3 and the credit.
+  - **Azure Container Apps (chosen):** runs the same image and can scale to zero replicas. With
+    minimum replicas 0 there is no charge while idle, and the monthly free grant (180,000
+    vCPU-seconds, 360,000 GiB-seconds, 2 million requests per subscription) covers staging use.
+    HTTPS is included. The cost is a cold start of a few seconds on the first request after an idle
+    period, which skews the first p95 sample in a k6 run (NFR 3.1) unless the test warms it up first.
+  - **Azure App Service (Linux, container):** always on, so no cold starts. The free plan allows only
+    one hour of runtime a day, and the paid plans bill every hour whether used or not, which works
+    against NFR 5.3 and the credit.
   - **A virtual machine running Docker Compose:** full control, but patching, TLS and uptime become my
     job, and it bills continuously.
-- Decision (proposed): Azure Container Apps in UK South for the API, with minimum replicas 0 for
-  staging; PostgreSQL in Azure Database for PostgreSQL Flexible Server on the smallest burstable tier.
-  The deploy job is added to CI once the resources and CI variables exist.
-- Consequences: staging cost is mostly the database, which also bills while idle, so it may be stopped
-  between test sessions, and the cost is recorded at each sprint review (NFR 5.3). Load tests must warm
-  the API first. For the March pilot, minimum replicas can be raised to 1 so the first request is never
-  slow. The deploy job runs on the laptop runner (DL-003), so deploys only happen while it is on.
+- Decision: Azure Container Apps (Consumption) in UK South for the API, minimum replicas 0 and
+  maximum 1 for staging. PostgreSQL 17 on Azure Database for PostgreSQL Flexible Server, Burstable
+  B1ms, which Azure for Students includes free for 12 months (750 hours a month, 32 GB storage).
+  The image is pulled from the project's GitLab container registry if Azure can reach it, otherwise
+  from a private Docker Hub repository. Azure Container Registry is not used, because its cheapest
+  tier bills monthly against the credit. The deploy job is added to CI once the resources and CI
+  variables exist.
+- Reason (Peter's words): TODO: Peter
+- Consequences: staging should cost close to nothing while the student offer lasts. Burstable B1ms
+  slows down when its CPU credits run out, which is acceptable for staging but must be checked
+  before load tests. Load tests must warm the API first. For the March pilot, minimum replicas can
+  be raised to 1 so the first request is never slow; that bills a small amount while it runs, and
+  the cost is recorded at each sprint review (NFR 5.3). The deploy job runs on the laptop runner
+  (DL-003), so deploys only happen while it is on.
 
 ---
 
