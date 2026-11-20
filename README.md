@@ -22,7 +22,7 @@ consent-based access.
 | Mobile app | Expo app running in the browser on localhost: every Figma V1 screen in light and dark. Sign-in and squads are real; Today, Trends, flags and the logging forms are **labelled previews with sample data** (see [`apps/mobile/README.md`](apps/mobile/README.md)) |
 | Staff dashboard | Not started (Sprint 7, Should) |
 | CI | Lint, typecheck and tests on a self-hosted GitLab runner |
-| Staging | **Not deployed.** Moved to Sprint 2 |
+| Staging | Azure Container Apps, Norway East (DL-014). Deployed by hand on 20 Nov; automatic deploy from `main` to follow (#34) |
 | Tests | 76 passing on 3 Nov (9 analytics, 48 API, 19 mobile). API tests fake the database; real PostgreSQL integration tests are still to do |
 
 Remaining MVP work is built athlete-first, one complete feature at a time (DL-005).
@@ -84,7 +84,7 @@ The reasoning behind these choices is recorded in [`docs/decision-log.md`](docs/
 | Auth | Firebase Authentication (identity only) |
 | Validation | Zod (shared) |
 | Testing | Jest, Supertest, React Native Testing Library, k6 |
-| CI/CD | GitLab CI, Docker, Azure UK South |
+| CI/CD | GitLab CI, Docker, Docker Hub, Azure Container Apps (Norway East) |
 
 ---
 
@@ -134,7 +134,7 @@ curl http://localhost:3000/health         # should return {"status":"ok", ...}
 ```
 
 The container applies committed migrations on start (`prisma migrate deploy`), reads its settings
-from `apps/api/.env`, and reaches Postgres as `db`. The staging deploy from `main` is still to come.
+from `apps/api/.env`, and reaches Postgres as `db`. Staging runs this image on Azure Container Apps (DL-014); the automatic deploy from `main` is still to come.
 
 ---
 

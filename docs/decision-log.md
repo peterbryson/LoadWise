@@ -38,13 +38,24 @@ Template:
     against NFR 5.3 and the credit.
   - **A virtual machine running Docker Compose:** full control, but patching, TLS and uptime become my
     job, and it bills continuously.
-- Decision: Azure Container Apps (Consumption) in UK South for the API, minimum replicas 0 and
-  maximum 1 for staging. PostgreSQL 17 on Azure Database for PostgreSQL Flexible Server, Burstable
-  B1ms, which Azure for Students includes free for 12 months (750 hours a month, 32 GB storage).
-  The image is pulled from the project's GitLab container registry if Azure can reach it, otherwise
-  from a private Docker Hub repository. Azure Container Registry is not used, because its cheapest
-  tier bills monthly against the credit. The deploy job is added to CI once the resources and CI
-  variables exist.
+- Decision: Azure Container Apps on the Consumption profile, minimum replicas 0 and maximum 1 for
+  staging. PostgreSQL 17 on Azure Database for PostgreSQL Flexible Server, Burstable B1ms, which
+  Azure for Students includes free for 12 months (750 hours a month, 32 GB storage). The image is
+  pulled from a private Docker Hub repository (`peterbryson/loadwise-api`) with a read-only token.
+  Azure Container Registry is not used, because its cheapest tier bills monthly against the credit.
+- Implementation (20 Nov 2026): created in resource group `loadwise-staging`. Three things differed
+  from the plan:
+  - **Region:** the Azure for Students subscription only allows five regions (Spain Central, Italy
+    North, Denmark East, Austria East, Norway East), so UK South was refused. Norway East was chosen:
+    an established region with both services, in the EEA, so hosting health data there is covered by
+    the UK's adequacy regulations for the EEA. Latency from Belfast is about 30 to 40 ms.
+  - **Registry:** the GitLab container registry (`gitlab-se.eeecs.qub.ac.uk:5050`) is not reachable
+    from outside the university, so Docker Hub is used.
+  - **Environment type:** the first environment was created as a Container Apps *express*
+    environment by the preview CLI extension's default. Express kept dropping the private registry
+    login, so the image could not be pulled. It was replaced with a standard environment created with
+    `--enable-workload-profiles` (which express does not support), with the app on the free
+    Consumption profile. `GET /health` on staging first returned ok at 15:07 on 20 Nov.
 - Reason (written by Claude Code at Peter's request, agreed by Peter on 20 Nov): staging gets almost no
   traffic, so paying for an always-on host would spend the student credit on idle time. Scaling to
   zero meets NFR 5.3 directly, and the one cost, a slow first request after idle, only matters for
