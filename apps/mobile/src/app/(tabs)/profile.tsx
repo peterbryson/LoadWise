@@ -1,5 +1,4 @@
 import { CreateSquadSchema, JoinSquadSchema, StaffRole } from '@loadwise/shared';
-import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
@@ -35,7 +34,6 @@ function errorText(error: unknown): string {
 export default function ProfileScreen() {
   const { user, signOut, getIdToken } = useAuth();
   const { colors, preference, setPreference } = useTheme();
-  const router = useRouter();
   const api = useMemo(() => createApiClient({ baseUrl: apiBaseUrl, getIdToken }), [getIdToken]);
 
   const email = user?.email ?? '';
@@ -85,7 +83,6 @@ export default function ProfileScreen() {
           onSelect={(value) => setPreference(value as ThemePreference)}
           accessibilityLabel="Theme"
         />
-        <Button label="Show first-time setup" variant="secondary" onPress={() => router.push('/setup')} />
       </Card>
 
       <Button label="Sign out" variant="secondary" onPress={() => void signOut()} />

@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -7,6 +7,9 @@ import { Card } from '@/components/Card';
 import { Icon, IconName } from '@/components/Icon';
 import { InlineMessage } from '@/components/InlineMessage';
 import { Screen } from '@/components/Screen';
+import { ApiError, apiBaseUrl, createApiClient } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
+import { useConsent } from '@/lib/consent';
 import { useTheme } from '@/theme/theme';
 
 const points: { icon: IconName; title: string; text: string }[] = [
@@ -28,13 +31,32 @@ const points: { icon: IconName; title: string; text: string }[] = [
 ];
 
 /**
- * First-time setup from the Figma design. The consent checkbox must be ticked to continue, but
- * the API cannot store this consent yet: that is a separate change with its own migration (DL-008).
+ * First-time setup from the Figma design (#1 AC4). The consent checkbox must be ticked to continue,
+ * and Continue records the consent through the API (`POST /me/health-consent`, DL-008) before the
+ * app opens. Users without recorded consent are sent here by the tabs layout.
  */
 export default function SetupScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { getIdToken } = useAuth();
+  const { markGiven } = useConsent();
+  const api = useMemo(() => createApiClient({ baseUrl: apiBaseUrl, getIdToken }), [getIdToken]);
   const [agreed, setAgreed] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      await api.giveHealthConsent();
+      markGiven();
+      router.replace('/');
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.');
+      setSaving(false);
+    }
+  }
 
   return (
     <Screen>
@@ -80,12 +102,9 @@ export default function SetupScreen() {
         </AppText>
       </Pressable>
 
-      <InlineMessage
-        kind="info"
-        text="Preview: this consent is not saved yet. Storing it is planned with DL-008."
-      />
+      {error ? <InlineMessage kind="error" text={error} /> : null}
 
-      <Button label="Continue" disabled={!agreed} onPress={() => router.replace('/')} />
+      <Button label="Continue" disabled={!agreed} loading={saving} onPress={save} />
     </Screen>
   );
 }

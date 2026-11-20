@@ -1,3 +1,4 @@
+import { HEALTH_DATA_NOTICE_VERSION } from '@loadwise/shared';
 import { ApiError, createApiClient } from './api';
 
 function jsonResponse(status: number, body: unknown): Response {
@@ -83,5 +84,47 @@ describe('FR4: app API client (#2)', () => {
     const error = await caught(client.health());
     expect(error.status).toBe(0);
     expect(error.message).toMatch(/Can't reach the LoadWise API/);
+  });
+});
+
+describe('NFR2: health-data consent calls (#1 AC4)', () => {
+  const me = {
+    id: 'u1',
+    email: 'athlete@example.com',
+    displayName: null,
+    healthConsentGiven: false,
+    healthConsentAt: null,
+  };
+
+  it('reads the signed-in user from GET /me with the token', async () => {
+    const { client, fetchFn } = clientReturning(jsonResponse(200, me));
+
+    await expect(client.me()).resolves.toEqual(me);
+    expect(fetchFn).toHaveBeenCalledWith('http://api.test/me', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer id-token' },
+      body: undefined,
+    });
+  });
+
+  it('records consent with the notice version the app shows', async () => {
+    const given = { ...me, healthConsentGiven: true, healthConsentAt: '2026-11-20T09:00:00.000Z' };
+    const { client, fetchFn } = clientReturning(jsonResponse(200, given));
+
+    await expect(client.giveHealthConsent()).resolves.toEqual(given);
+    expect(fetchFn).toHaveBeenCalledWith(
+      'http://api.test/me/health-consent',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ noticeVersion: HEALTH_DATA_NOTICE_VERSION }) }),
+    );
+  });
+
+  it("shows the API's message when consent is missing (403)", async () => {
+    const { client } = clientReturning(
+      jsonResponse(403, { statusCode: 403, error: 'Forbidden', message: 'Give consent first.' }),
+    );
+
+    const error = await caught(client.me());
+    expect(error.status).toBe(403);
+    expect(error.message).toBe('Give consent first.');
   });
 });

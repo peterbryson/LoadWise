@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { ConsentProvider } from '@/lib/consent';
 import { ThemeProvider, useTheme } from '@/theme/theme';
 
 export default function RootLayout() {
@@ -17,7 +18,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AuthProvider>{fontsLoaded ? <Navigator /> : <Loading />}</AuthProvider>
+        <AuthProvider>
+          <ConsentProvider>{fontsLoaded ? <Navigator /> : <Loading />}</ConsentProvider>
+        </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
