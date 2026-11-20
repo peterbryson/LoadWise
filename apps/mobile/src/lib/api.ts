@@ -104,8 +104,9 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     saveWellness: (input: WellnessCheck) => request<SavedWellness>('POST', '/wellness', input),
     /** #4: log a training session or match. */
     logSession: (input: SessionLog) => request<SavedSession>('POST', '/sessions', input),
-    /** #4 AC3, AC4: the athlete's recent sessions, newest first (the API's default of 20). */
-    recentSessions: () => request<SavedSession[]>('GET', '/sessions'),
+    /** #4 AC3, AC4: the athlete's recent sessions, newest first. The API returns 20 unless `limit` (1 to 50) is given. */
+    recentSessions: (limit?: number) =>
+      request<SavedSession[]>('GET', limit === undefined ? '/sessions' : `/sessions?limit=${limit}`),
   };
 }
 

@@ -5,6 +5,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
+import { LatestSessionCard } from '@/components/LatestSessionCard';
 import { Metric, MetricRow } from '@/components/Metric';
 import { PreviewBanner } from '@/components/PreviewBanner';
 import { ProgressBar, Screen, ScreenHeader } from '@/components/Screen';
@@ -20,7 +21,10 @@ const states = [
   { value: 'offline', label: 'Saved offline' },
 ] as const;
 
-/** Today: status first, then the numbers (DL-006). Every figure here is Figma sample data. */
+/**
+ * Today: status first, then the numbers (DL-006). Every figure here is Figma sample data except the
+ * Latest session card, which shows the athlete's newest saved session (#4 AC4).
+ */
 export default function TodayScreen() {
   const router = useRouter();
   const [state, setState] = useState<TodayState>('usual');
@@ -29,7 +33,7 @@ export default function TodayScreen() {
     <Screen withTabBar>
       <ScreenHeader caption={todayCaption(new Date())} title="Today" />
       <PreviewBanner
-        note="sample data. Load metrics arrive with #7 and flags with #9."
+        note="sample data, except Latest session. Load metrics arrive with #7 and flags with #9."
         states={states}
         state={state}
         onStateChange={setState}
@@ -134,22 +138,8 @@ export default function TodayScreen() {
             </Card>
           ) : null}
 
-          {/* #4 AC4: the card opens the athlete's recent sessions. Its own content is still sample data. */}
-          <Pressable
-            onPress={() => router.push('/sessions')}
-            accessibilityRole="link"
-            accessibilityLabel="Latest session. Show recent sessions"
-          >
-            <Card gap={2}>
-              <AppText variant="caption" color="textMuted">
-                {state === 'offline' ? 'Latest session · waiting to sync' : 'Latest session'}
-              </AppText>
-              <AppText variant="heading">{sample.latestSession.title}</AppText>
-              <AppText variant="caption" color="textMuted">
-                {sample.latestSession.detail}
-              </AppText>
-            </Card>
-          </Pressable>
+          {/* #4 AC4: real data from the API, not part of the preview. */}
+          <LatestSessionCard />
 
           <Button label="Log a session" onPress={() => router.push('/log-session')} />
         </>

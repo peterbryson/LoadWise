@@ -67,7 +67,8 @@ flowchart LR
 
 The wellness check is saved through `POST /wellness` (#5), one per day, and a session through
 `POST /sessions` (#4). Saving offline and syncing later arrives with #6. The Latest session card on
-Today still shows sample data until load metrics arrive (#7), but it opens the real session list.
+Today shows the newest saved session from `GET /sessions?limit=1` and opens the real session list;
+the rest of Today stays sample data until load metrics arrive (#7).
 
 ## 3. Screens, routes and stories
 

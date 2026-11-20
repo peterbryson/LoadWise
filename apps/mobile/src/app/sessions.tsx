@@ -1,4 +1,3 @@
-import type { SessionType } from '@loadwise/shared';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
@@ -9,24 +8,8 @@ import { InlineMessage } from '@/components/InlineMessage';
 import { NavHeader, Screen } from '@/components/Screen';
 import { ApiError, apiBaseUrl, createApiClient, SavedSession } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { sessionTypeLabels, shortDay } from '@/lib/session-format';
 import { useTheme } from '@/theme/theme';
-
-const typeLabels: Record<SessionType, string> = {
-  TRAINING: 'Training',
-  MATCH: 'Match',
-  GYM: 'Gym',
-  OTHER: 'Other',
-};
-
-/** "Fri 20 Nov" for a YYYY-MM-DD date, read as a local calendar day. */
-function shortDay(date: string): string {
-  const [year, month, day] = date.split('-').map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString('en-GB', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
-}
 
 type State =
   | { kind: 'loading' }
@@ -96,7 +79,7 @@ export default function SessionsScreen() {
         ? state.sessions.map((session) => (
             <Card key={session.id} gap={2}>
               <View style={styles.row}>
-                <AppText variant="heading">{`${typeLabels[session.type]} · ${session.durationMinutes} min`}</AppText>
+                <AppText variant="heading">{`${sessionTypeLabels[session.type]} · ${session.durationMinutes} min`}</AppText>
                 <AppText variant="label">{session.load} AU</AppText>
               </View>
               <AppText variant="caption" color="textMuted">

@@ -173,4 +173,11 @@ describe('FR1: session calls (#4)', () => {
     await expect(client.recentSessions()).resolves.toEqual(list);
     expect(fetchFn).toHaveBeenCalledWith('http://api.test/sessions', expect.objectContaining({ method: 'GET' }));
   });
+
+  it('asks for fewer sessions when a limit is given', async () => {
+    const { client, fetchFn } = clientReturning(jsonResponse(200, []));
+
+    await expect(client.recentSessions(1)).resolves.toEqual([]);
+    expect(fetchFn).toHaveBeenCalledWith('http://api.test/sessions?limit=1', expect.objectContaining({ method: 'GET' }));
+  });
 });
