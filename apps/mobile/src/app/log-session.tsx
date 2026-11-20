@@ -1,7 +1,7 @@
 import { sessionLoad } from '@loadwise/analytics';
 import { SessionLogSchema, SessionType } from '@loadwise/shared';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -9,9 +9,11 @@ import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { InlineMessage } from '@/components/InlineMessage';
 import { OptionRow } from '@/components/Option';
-import { PreviewBanner } from '@/components/PreviewBanner';
 import { NavHeader, Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
+import { ApiError, apiBaseUrl, createApiClient } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
+import { localIsoDate } from '@/lib/dates';
 import { useTheme } from '@/theme/theme';
 
 const types = [
@@ -47,37 +49,50 @@ const rpeAnchors: Partial<Record<number, string>> = {
   10: 'Maximal',
 };
 
-/** #4 log a session. Validates with the shared schema; saving arrives with #4. */
+/**
+ * #4 log a session. Validates with the shared schema (AC2), then saves through the API (AC1) and
+ * returns to Today. Saving offline and syncing later arrives with #6.
+ */
 export default function LogSessionScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { getIdToken } = useAuth();
+  const api = useMemo(() => createApiClient({ baseUrl: apiBaseUrl, getIdToken }), [getIdToken]);
   const [type, setType] = useState<SessionType>('TRAINING');
   const [duration, setDuration] = useState<string | undefined>();
   const [otherMinutes, setOtherMinutes] = useState('');
   const [rpe, setRpe] = useState<number | undefined>();
   const [error, setError] = useState<string | null>(null);
-  const [checked, setChecked] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const minutes = duration === 'other' ? Number(otherMinutes) : Number(duration);
   const parsed = SessionLogSchema.safeParse({
     type,
-    date: new Date().toISOString().slice(0, 10),
+    date: localIsoDate(new Date()),
     durationMinutes: minutes,
     rpe,
   });
   const load = parsed.success ? sessionLoad(parsed.data.rpe, parsed.data.durationMinutes) : null;
 
-  function save() {
-    setChecked(parsed.success);
-    if (parsed.success) return setError(null);
-    if (rpe === undefined) return setError('Choose an RPE from 1 to 10.');
-    setError('Choose a duration from 1 to 600 minutes.');
+  async function save() {
+    if (!parsed.success) {
+      if (rpe === undefined) return setError('Choose an RPE from 1 to 10.');
+      return setError('Choose a duration from 1 to 600 minutes.');
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      await api.logSession(parsed.data);
+      router.back();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.');
+      setSaving(false);
+    }
   }
 
   function change<T>(setter: (value: T) => void) {
     return (value: T) => {
       setter(value);
-      setChecked(false);
       setError(null);
     };
   }
@@ -85,14 +100,13 @@ export default function LogSessionScreen() {
   return (
     <Screen>
       <NavHeader title="Log a session" icon="close" onPress={() => router.back()} />
-      <PreviewBanner note="sessions are not saved yet. Saving arrives with #4." />
 
       <View style={styles.group}>
         <AppText variant="heading">Type</AppText>
         <OptionRow options={types} selected={type} onSelect={change(setType)} accessibilityLabel="Session type" />
       </View>
 
-      {/* The date picker comes with #4; sessions are dated today until then. */}
+      {/* Sessions are dated today. Logging a past day is not in #4's criteria. */}
       <View
         style={[styles.date, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: colors.cardBorderWidth }]}
         accessible
@@ -160,8 +174,7 @@ export default function LogSessionScreen() {
         </Card>
       ) : null}
 
-      {checked ? <InlineMessage kind="info" text="Preview: this session is valid but was not saved." /> : null}
-      <Button label="Save session" onPress={save} />
+      <Button label="Save session" onPress={save} loading={saving} />
     </Screen>
   );
 }

@@ -134,15 +134,22 @@ export default function TodayScreen() {
             </Card>
           ) : null}
 
-          <Card gap={2}>
-            <AppText variant="caption" color="textMuted">
-              {state === 'offline' ? 'Latest session · waiting to sync' : 'Latest session'}
-            </AppText>
-            <AppText variant="heading">{sample.latestSession.title}</AppText>
-            <AppText variant="caption" color="textMuted">
-              {sample.latestSession.detail}
-            </AppText>
-          </Card>
+          {/* #4 AC4: the card opens the athlete's recent sessions. Its own content is still sample data. */}
+          <Pressable
+            onPress={() => router.push('/sessions')}
+            accessibilityRole="link"
+            accessibilityLabel="Latest session. Show recent sessions"
+          >
+            <Card gap={2}>
+              <AppText variant="caption" color="textMuted">
+                {state === 'offline' ? 'Latest session · waiting to sync' : 'Latest session'}
+              </AppText>
+              <AppText variant="heading">{sample.latestSession.title}</AppText>
+              <AppText variant="caption" color="textMuted">
+                {sample.latestSession.detail}
+              </AppText>
+            </Card>
+          </Pressable>
 
           <Button label="Log a session" onPress={() => router.push('/log-session')} />
         </>

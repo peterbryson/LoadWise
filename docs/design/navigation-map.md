@@ -30,13 +30,13 @@ flowchart TD
   today <-- "Start check-in / save or close" --> wellness[Wellness check<br/>/wellness · modal]
   today <-- "Log a session / save or close" --> logsession[Log session<br/>/log-session · modal]
   today <-- "See why (when flagged) / back" --> flag[Why this was flagged<br/>/flag]
-  today -.->|"Latest session card"| history[Recent sessions<br/>#4]:::planned
+  today <-- "Latest session card / back" --> history[Recent sessions<br/>/sessions]
   trends -.->|"AI button on every tab (disabled)"| ai[AI assistant<br/>#12, #13, #15]:::planned
 
   profile -- "Sign out" --> signin
 
-  class signin,setup,profile,wellness real
-  class today,trends,logsession,flag preview
+  class signin,setup,profile,wellness,logsession,history real
+  class today,trends,flag preview
   classDef real fill:#d9ead3,stroke:#38761d,color:#000
   classDef preview fill:#fff2cc,stroke:#bf9000,color:#000
   classDef planned fill:#f3f3f3,stroke:#999,stroke-dasharray:4 3,color:#555
@@ -61,12 +61,13 @@ flowchart LR
   e -- "Save session" --> f{Valid?}
   f -- "No: missing or<br/>out-of-range RPE" --> e
   f -- Yes --> g{Online?}
-  g -- Yes --> h[Today<br/>latest session updated]
+  g -- "Yes: saved" --> h[Today]
   g -. "No (#6, planned)" .-> i[Today<br/>saved offline, waiting to sync]
 ```
 
-The wellness check is saved through `POST /wellness` (#5), one per day. The session save arrives
-with #4, and the offline queue with #6.
+The wellness check is saved through `POST /wellness` (#5), one per day, and a session through
+`POST /sessions` (#4). Saving offline and syncing later arrives with #6. The Latest session card on
+Today still shows sample data until load metrics arrive (#7), but it opens the real session list.
 
 ## 3. Screens, routes and stories
 
@@ -78,10 +79,10 @@ with #4, and the offline queue with #6.
 | Trends | `/trends` (tab) | Tab bar | #7, #9 | Preview |
 | Profile | `/profile` (tab) | Tab bar | #1, #2 | Real: account, squads (create and join), sign out |
 | Wellness check | `/wellness` (modal) | Today: Start check-in | #5 | Real: saves one check-in per day |
-| Log session | `/log-session` (modal) | Today: Log a session | #4 | Preview: validates, does not save |
+| Log session | `/log-session` (modal) | Today: Log a session | #4 | Real: saves type, duration and RPE |
 | Why this was flagged | `/flag` | Today: See why | #9, #12 | Preview: sample flag |
 | AI assistant | none | AI button (disabled) | #12, #13, #15 | Planned |
-| Recent sessions | none | Today: Latest session card | #4 | Planned |
+| Recent sessions | `/sessions` | Today: Latest session card | #4 | Real: newest first; offline sessions arrive with #6 |
 
 ## 4. Design choices shown by the map
 
@@ -98,5 +99,5 @@ with #4, and the offline queue with #6.
 
 - ~~**Returning users skip setup.**~~ Fixed 20 Nov (#1 AC4, I-7): any user without recorded consent is sent to setup.
 - ~~**Setup can be reopened from Profile.**~~ Fixed 20 Nov: the preview link is removed.
-- **No recent-sessions screen** yet, although #4's acceptance criteria require one.
+- ~~**No recent-sessions screen.**~~ Added 20 Nov (#4): `/sessions`, opened from the Latest session card.
 - **Staff screens** (#10 squad overview) are not designed; they get their own map with the week 5 wireframes.
