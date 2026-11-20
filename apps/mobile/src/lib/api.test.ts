@@ -128,3 +128,26 @@ describe('NFR2: health-data consent calls (#1 AC4)', () => {
     expect(error.message).toBe('Give consent first.');
   });
 });
+
+describe('FR1: wellness check call (#5)', () => {
+  const check = { date: '2026-11-20', sleep: 4, soreness: 2, fatigue: 3, stress: 5 };
+
+  it('posts the check-in with the token', async () => {
+    const { client, fetchFn } = clientReturning(jsonResponse(201, { id: 'w1', ...check }));
+
+    await expect(client.saveWellness(check)).resolves.toEqual({ id: 'w1', ...check });
+    expect(fetchFn).toHaveBeenCalledWith('http://api.test/wellness', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer id-token' },
+      body: JSON.stringify(check),
+    });
+  });
+
+  it("shows the API's message for a second check-in on the same day (409)", async () => {
+    const { client } = clientReturning(
+      jsonResponse(409, { statusCode: 409, error: 'Conflict', message: 'You have already checked in today' }),
+    );
+
+    expect((await caught(client.saveWellness(check))).message).toBe('You have already checked in today');
+  });
+});

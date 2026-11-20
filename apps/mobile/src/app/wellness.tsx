@@ -1,13 +1,15 @@
 import { WellnessCheckSchema } from '@loadwise/shared';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { InlineMessage } from '@/components/InlineMessage';
 import { OptionRow } from '@/components/Option';
-import { PreviewBanner } from '@/components/PreviewBanner';
 import { NavHeader, Screen } from '@/components/Screen';
+import { ApiError, apiBaseUrl, createApiClient } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
+import { localIsoDate } from '@/lib/dates';
 
 type Item = 'sleep' | 'soreness' | 'fatigue' | 'stress';
 
@@ -21,24 +23,38 @@ const items: { key: Item; label: string; low: string; high: string }[] = [
 
 const scores = [1, 2, 3, 4, 5].map((value) => ({ value, label: String(value) }));
 
-/** #5 wellness check. The form validates with the shared schema; saving arrives with #5. */
+/**
+ * #5 wellness check. The form validates with the shared schema, then saves through the API, which
+ * allows one check-in per day (AC2). Saving returns to Today.
+ */
 export default function WellnessScreen() {
   const router = useRouter();
   const [answers, setAnswers] = useState<Partial<Record<Item, number>>>({});
+  const { getIdToken } = useAuth();
+  const api = useMemo(() => createApiClient({ baseUrl: apiBaseUrl, getIdToken }), [getIdToken]);
   const [error, setError] = useState<string | null>(null);
-  const [checked, setChecked] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  function save() {
-    const today = new Date().toISOString().slice(0, 10);
-    const result = WellnessCheckSchema.safeParse({ date: today, ...answers });
-    setChecked(result.success);
-    setError(result.success ? null : 'Choose a score from 1 to 5 for each question.');
+  async function save() {
+    const result = WellnessCheckSchema.safeParse({ date: localIsoDate(new Date()), ...answers });
+    if (!result.success) {
+      setError('Choose a score from 1 to 5 for each question.');
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      await api.saveWellness(result.data);
+      router.back();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.');
+      setSaving(false);
+    }
   }
 
   return (
     <Screen>
       <NavHeader title="Morning check-in" icon="close" onPress={() => router.back()} />
-      <PreviewBanner note="check-ins are not saved yet. Saving arrives with #5." />
 
       {items.map((item) => (
         <View key={item.key} style={styles.item}>
@@ -48,7 +64,6 @@ export default function WellnessScreen() {
             selected={answers[item.key]}
             onSelect={(value) => {
               setAnswers((current) => ({ ...current, [item.key]: value }));
-              setChecked(false);
             }}
             accessibilityLabel={`${item.label}, 1 is ${item.low}, 5 is ${item.high}`}
           />
@@ -65,9 +80,8 @@ export default function WellnessScreen() {
 
       <InlineMessage kind="info" text="In pain or injured? Speak to a physio or GP." />
       {error ? <InlineMessage kind="error" text={error} /> : null}
-      {checked ? <InlineMessage kind="info" text="Preview: this check-in is valid but was not saved." /> : null}
 
-      <Button label="Save check-in" onPress={save} />
+      <Button label="Save check-in" onPress={save} loading={saving} />
     </Screen>
   );
 }
