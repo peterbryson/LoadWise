@@ -45,7 +45,10 @@ Template:
   from a private Docker Hub repository. Azure Container Registry is not used, because its cheapest
   tier bills monthly against the credit. The deploy job is added to CI once the resources and CI
   variables exist.
-- Reason (Peter's words): TODO: Peter
+- Reason (written by Claude Code at Peter's request, agreed by Peter on 20 Nov): staging gets almost no
+  traffic, so paying for an always-on host would spend the student credit on idle time. Scaling to
+  zero meets NFR 5.3 directly, and the one cost, a slow first request after idle, only matters for
+  load tests and the pilot, where it can be handled by warming up or raising minimum replicas.
 - Consequences: staging should cost close to nothing while the student offer lasts. Burstable B1ms
   slows down when its CPU credits run out, which is acceptable for staging but must be checked
   before load tests. Load tests must warm the API first. For the March pilot, minimum replicas can
