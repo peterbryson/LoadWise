@@ -15,6 +15,7 @@ default:
 stages:
   - verify
   - test
+  - publish
 
 lint:
   stage: verify
@@ -36,3 +37,30 @@ test:
       - '**/coverage/'
     reports:
       junit: '**/reports/junit-*.xml'
+
+# Builds the API image (apps/api/Dockerfile) on every branch, so a broken image fails the merge
+# request. On main it also pushes the image to Docker Hub, tagged with the commit and "main"
+# (DL-014, DL-015). Kaniko builds without a Docker daemon, so the runner needs no privileged mode.
+# Deploying that image to Azure is a separate command for now (README, "Deploy to staging").
+api-image:
+  stage: publish
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: ['']
+  before_script: []
+  cache: []
+  script:
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
+        mkdir -p /kaniko/.docker
+        AUTH=$(printf '%s:%s' "$DOCKERHUB_USERNAME" "$DOCKERHUB_TOKEN" | base64 | tr -d '\n')
+        printf '{"auths":{"https://index.docker.io/v1/":{"auth":"%s"}}}' "$AUTH" > /kaniko/.docker/config.json
+        /kaniko/executor --context "$CI_PROJECT_DIR" --dockerfile "$CI_PROJECT_DIR/apps/api/Dockerfile" \
+          --destination "docker.io/$DOCKERHUB_USERNAME/loadwise-api:$CI_COMMIT_SHORT_SHA" \
+          --destination "docker.io/$DOCKERHUB_USERNAME/loadwise-api:main"
+        echo "Pushed loadwise-api:$CI_COMMIT_SHORT_SHA. Deploy it with the command in the README."
+      else
+        /kaniko/executor --context "$CI_PROJECT_DIR" --dockerfile "$CI_PROJECT_DIR/apps/api/Dockerfile" --no-push
+      fi
+  rules:
+    - if: $CI_COMMIT_BRANCH
