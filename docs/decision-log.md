@@ -343,6 +343,15 @@ Template:
 - Consequences: every merge request now has CI evidence. Pipelines queue while my laptop is off,
   so Docker Desktop is set to start at sign-in. Revisit if the university provides a runner, or
   when the Azure staging deploy (Sprint 2) needs reliable runs.
+- Update (20 Nov 2026, after DL-013): the move to `gitlab-se.eeecs.qub.ac.uk` needed the runner
+  registering again. A first attempt failed: running `gitlab-runner unregister --all-runners` to
+  remove the old server's entry removed every registration in the container, including the new one,
+  so the runner stopped picking up jobs and the !8 test job sat pending. Fixed by recreating the
+  container (`gitlab/gitlab-runner`, `--restart always`, config in the `gitlab-runner-config`
+  volume) and registering a new project runner (#213, Docker executor, `node:22`). The stuck job then
+  ran and passed. Lesson: `--all-runners` ignores `--url`; remove a single runner by name or token.
+  Sprint 1's three runner failures (image pull, timeout, no npm access) are the same trade-off: the
+  runner is only as reliable as the laptop.
 
 ## DL-002: Data model v1: athlete-owned health data and per-squad consent with history
 
