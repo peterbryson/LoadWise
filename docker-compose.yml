@@ -1,5 +1,7 @@
-# Local development services. The API runs on your machine with `pnpm dev`.
-# An API container (Dockerfile) is added in Sprint 2 alongside the Azure staging deploy.
+# Local development services.
+# - `docker compose up -d db` starts only PostgreSQL; the API then runs on your machine with `pnpm dev`.
+# - `docker compose --profile api up --build` also runs the API in a container built from
+#   apps/api/Dockerfile, the same image the Azure staging deploy will use (#34).
 services:
   db:
     image: postgres:17-alpine
@@ -15,6 +17,28 @@ services:
       test: ['CMD-SHELL', 'pg_isready -U loadwise']
       interval: 5s
       retries: 10
+
+  api:
+    # Only started with --profile api, so plain `docker compose up -d db` is unchanged.
+    profiles: ['api']
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - path: apps/api/.env
+        required: false
+    environment:
+      # Inside the compose network Postgres is reached as "db", not localhost.
+      DATABASE_URL: postgresql://loadwise:loadwise@db:5432/loadwise?schema=public
+    ports:
+      - '3000:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://localhost:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      retries: 5
 
 volumes:
   pgdata:
