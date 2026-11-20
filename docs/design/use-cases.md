@@ -1,6 +1,6 @@
 # Use case descriptions: log a session, daily wellness check
 
-Drafted by Claude Code at Peter's request, 20 Nov 2026; Peter to check. Task #39.
+Drafted by Claude Code at Peter's request, 20 Nov 2026; reviewed and approved by Peter, 20 Nov 2026. Task #39.
 
 These describe the behaviour built on `main` as of 20 Nov 2026 (merge requests !10, !11 and !12),
 read from the code: `apps/mobile/src/app/log-session.tsx`, `sessions.tsx` and `wellness.tsx`,

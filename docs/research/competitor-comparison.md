@@ -1,6 +1,6 @@
 # Competitor comparison (Ch1)
 
-Drafted by Claude Code at Peter's request, 20 Nov 2026; Peter to check. Task #38.
+Drafted by Claude Code at Peter's request, 20 Nov 2026; reviewed and approved by Peter, 20 Nov 2026. Task #38.
 
 Every fact in the first table comes from the numbered source in that cell, read on 20 Nov 2026.
 "Not stated" means the source did not say, not that the product lacks the feature. Prices are as
