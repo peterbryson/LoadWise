@@ -45,7 +45,12 @@ model User {
   email       String   @unique
   displayName String
   createdAt   DateTime @default(now())
+  /// When the user agreed to health-data processing at first-time setup (DL-008). Null until then,
+  /// and health-data writes are refused with 403. A cached copy of the latest HealthConsentEvent,
+  /// only ever written in the same transaction as a new event.
+  healthConsentAt DateTime?
 
+  healthConsentEvents HealthConsentEvent[]
   memberships     Membership[]
   sessions        Session[]
   wellnessEntries WellnessEntry[]
@@ -95,6 +100,20 @@ model ConsentEvent {
   membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
 
   @@index([membershipId, createdAt])
+}
+
+/// Append-only history of a user agreeing to (or, with #14, withdrawing) health-data processing,
+/// separate from per-squad sharing consent. Records which privacy notice version was agreed to.
+model HealthConsentEvent {
+  id            String        @id @default(uuid())
+  userId        String
+  action        ConsentAction
+  noticeVersion String
+  createdAt     DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 /// FR 1: a logged training session or match. Session load (RPE x minutes) is calculated by

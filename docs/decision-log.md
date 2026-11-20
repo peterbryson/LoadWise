@@ -173,6 +173,12 @@ Template:
   which removes all data. Until #14 exists there is no withdrawal route, which is acceptable only
   because no real athlete data is used before the pilot (Sprint 8). Whether a softer "pause
   processing" option is needed is revisited with #14.
+- Implementation (20 Nov 2026, #1; options chosen by Peter): a `HealthConsentEvent` table (action,
+  `noticeVersion`, time) plus a cached `User.healthConsentAt`, written together by
+  `MeService.giveHealthConsent` in one transaction. The client must send the current notice version
+  (`HEALTH_DATA_NOTICE_VERSION` in `@loadwise/shared`). Health-data controllers use
+  `@RequiresHealthConsent()` at class level, which returns 403 until consent is recorded. `GET /me`
+  reports consent status so the app can send any user without it to setup (issue log I-7).
 
 ## DL-007: Metric definitions: usual week, baseline length and when metrics first appear
 
