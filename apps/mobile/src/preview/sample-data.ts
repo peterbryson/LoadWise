@@ -15,7 +15,6 @@ export const sample = {
     title: 'Your load has increased faster than usual',
   },
   wellnessInsight: 'Sleep is lower than your recent average.',
-  latestSession: { title: 'Training, 60 min', detail: 'RPE 7, 420 AU' },
   weeklyLoad: [
     { label: 'Wk 1', height: 43 },
     { label: 'Wk 2', height: 48 },

@@ -3,13 +3,11 @@ import { ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { renderScreen } from '@/test-utils';
 import SessionsScreen from '@/app/sessions';
-import TodayScreen from '@/app/(tabs)/index';
 
 const mockPush = jest.fn();
 const mockRecentSessions = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
-  Link: ({ children }: { children: unknown }) => children,
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
@@ -30,14 +28,6 @@ describe('FR1: recent sessions, newest first (#4 AC3, AC4)', () => {
       signOut: jest.fn(),
       getIdToken: jest.fn(),
     });
-  });
-
-  it('opens from the Latest session card on Today', async () => {
-    await renderScreen(<TodayScreen />);
-
-    await fireEvent.press(screen.getByRole('link', { name: 'Latest session. Show recent sessions' }));
-
-    expect(mockPush).toHaveBeenCalledWith('/sessions');
   });
 
   it('lists sessions in the order the API returns them (newest first), with their load', async () => {
