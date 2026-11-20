@@ -1,5 +1,5 @@
 import { HEALTH_DATA_NOTICE_VERSION } from '@loadwise/shared';
-import type { CreateSquad, StaffRole } from '@loadwise/shared';
+import type { CreateSquad, StaffRole, WellnessCheck } from '@loadwise/shared';
 
 /** An API failure with a message that is safe to show on screen. */
 export class ApiError extends Error {
@@ -32,6 +32,11 @@ export interface Me {
   displayName: string | null;
   healthConsentGiven: boolean;
   healthConsentAt: string | null;
+}
+
+/** A saved wellness check, from `POST /wellness`. */
+export interface SavedWellness extends WellnessCheck {
+  id: string;
 }
 
 interface ApiClientOptions {
@@ -89,6 +94,8 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     /** #1 AC4: records consent to the notice version this app shows at setup. */
     giveHealthConsent: () =>
       request<Me>('POST', '/me/health-consent', { noticeVersion: HEALTH_DATA_NOTICE_VERSION }),
+    /** #5: the daily wellness check. 409 if today's check-in is already saved. */
+    saveWellness: (input: WellnessCheck) => request<SavedWellness>('POST', '/wellness', input),
   };
 }
 

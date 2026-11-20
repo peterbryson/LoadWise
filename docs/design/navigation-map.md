@@ -35,8 +35,8 @@ flowchart TD
 
   profile -- "Sign out" --> signin
 
-  class signin,setup,profile real
-  class today,trends,wellness,logsession,flag preview
+  class signin,setup,profile,wellness real
+  class today,trends,logsession,flag preview
   classDef real fill:#d9ead3,stroke:#38761d,color:#000
   classDef preview fill:#fff2cc,stroke:#bf9000,color:#000
   classDef planned fill:#f3f3f3,stroke:#999,stroke-dasharray:4 3,color:#555
@@ -54,9 +54,9 @@ Today and open as modals, so the athlete is never more than one tap from Today.
 flowchart LR
   a([Open app]) --> b[Today]
   b -- "Start check-in" --> c[Wellness check<br/>4 items, 1 to 5]
-  c -- "Save check-in" --> d{Valid?}
-  d -- No --> c
-  d -- Yes --> b2[Today]
+  c -- "Save check-in" --> d{Valid and<br/>first today?}
+  d -- "No: missing score or<br/>already checked in" --> c
+  d -- "Yes: saved" --> b2[Today]
   b2 -- "Log a session" --> e[Log session<br/>type, duration, RPE]
   e -- "Save session" --> f{Valid?}
   f -- "No: missing or<br/>out-of-range RPE" --> e
@@ -65,8 +65,8 @@ flowchart LR
   g -. "No (#6, planned)" .-> i[Today<br/>saved offline, waiting to sync]
 ```
 
-Today, the saves validate but do not store anything: saving arrives with #5 (wellness) and #4
-(sessions), and the offline queue with #6.
+The wellness check is saved through `POST /wellness` (#5), one per day. The session save arrives
+with #4, and the offline queue with #6.
 
 ## 3. Screens, routes and stories
 
@@ -77,7 +77,7 @@ Today, the saves validate but do not store anything: saving arrives with #5 (wel
 | Today | `/` (tab) | Sign in, setup, closing any form | #7, #9 | Preview: states New user, Usual range, Flagged, Saved offline |
 | Trends | `/trends` (tab) | Tab bar | #7, #9 | Preview |
 | Profile | `/profile` (tab) | Tab bar | #1, #2 | Real: account, squads (create and join), sign out |
-| Wellness check | `/wellness` (modal) | Today: Start check-in | #5 | Preview: validates, does not save |
+| Wellness check | `/wellness` (modal) | Today: Start check-in | #5 | Real: saves one check-in per day |
 | Log session | `/log-session` (modal) | Today: Log a session | #4 | Preview: validates, does not save |
 | Why this was flagged | `/flag` | Today: See why | #9, #12 | Preview: sample flag |
 | AI assistant | none | AI button (disabled) | #12, #13, #15 | Planned |

@@ -6,13 +6,14 @@ import { HealthModule } from './health/health.module';
 import { MeModule } from './me/me.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SquadsModule } from './squads/squads.module';
+import { WellnessModule } from './wellness/wellness.module';
 
 /**
  * Root module. Each feature (auth, squads, sessions, wellness, analytics, assistant)
  * gets its own module under src/<feature>/ and is imported here.
  */
 @Module({
-  imports: [PrismaModule, AuthModule, HealthModule, MeModule, SquadsModule],
+  imports: [PrismaModule, AuthModule, HealthModule, MeModule, SquadsModule, WellnessModule],
   // APP_FILTER applies the filter to every route, so all errors share one shape (#27).
   providers: [{ provide: APP_FILTER, useClass: HttpExceptionFilter }],
 })
