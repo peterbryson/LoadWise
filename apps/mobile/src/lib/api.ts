@@ -1,3 +1,4 @@
+import { HEALTH_DATA_NOTICE_VERSION } from '@loadwise/shared';
 import type { CreateSquad, StaffRole } from '@loadwise/shared';
 
 /** An API failure with a message that is safe to show on screen. */
@@ -24,6 +25,15 @@ export interface JoinedSquad {
   role: 'ATHLETE';
 }
 
+/** The signed-in user, from `GET /me`. */
+export interface Me {
+  id: string;
+  email: string;
+  displayName: string | null;
+  healthConsentGiven: boolean;
+  healthConsentAt: string | null;
+}
+
 interface ApiClientOptions {
   baseUrl: string;
   getIdToken: () => Promise<string>;
@@ -44,9 +54,9 @@ async function readError(response: Response): Promise<ApiError> {
   if (response.status === 400 && body.issues?.length) {
     return new ApiError(400, body.issues[0].message);
   }
-  // 404 and 409 messages come from the API and contain no personal data, e.g. "You are
+  // 403, 404 and 409 messages come from the API and contain no personal data, e.g. "You are
   // already in this squad". Anything else gets a generic message.
-  if ((response.status === 404 || response.status === 409) && typeof body.message === 'string') {
+  if ([403, 404, 409].includes(response.status) && typeof body.message === 'string') {
     return new ApiError(response.status, body.message);
   }
   return new ApiError(response.status, 'Something went wrong. Try again.');
@@ -75,6 +85,10 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     health: () => request<{ status: string }>('GET', '/health', undefined, false),
     createSquad: (input: CreateSquad) => request<CreatedSquad>('POST', '/squads', input),
     joinSquad: (inviteCode: string) => request<JoinedSquad>('POST', '/squads/join', { inviteCode }),
+    me: () => request<Me>('GET', '/me'),
+    /** #1 AC4: records consent to the notice version this app shows at setup. */
+    giveHealthConsent: () =>
+      request<Me>('POST', '/me/health-consent', { noticeVersion: HEALTH_DATA_NOTICE_VERSION }),
   };
 }
 

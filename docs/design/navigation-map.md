@@ -1,7 +1,7 @@
 # Athlete app navigation map
 
 How an athlete moves between the screens of the LoadWise mobile app. Drawn from the Expo Router
-routes in `apps/mobile/src/app` and the Figma V1 design, as of 10 Nov 2026. Update it whenever a
+routes in `apps/mobile/src/app` and the Figma V1 design, as of 20 Nov 2026. Update it whenever a
 route or a link between screens changes. Evidence for Ch4 (user interface design) and NFR 1.1
 (daily log in 60 s or less).
 
@@ -14,10 +14,12 @@ sample data until their story is built; dashed boxes and arrows are planned, not
 flowchart TD
   start([App opens]) --> auth{Signed in?}
   auth -- No --> signin[Sign in<br/>/sign-in]
-  auth -- Yes --> today
+  auth -- Yes --> consent{Consent<br/>recorded?}
+  consent -- Yes --> today
+  consent -- No --> setup
   signin -- "Create an account" --> setup[First-time setup<br/>/setup<br/>consent checkbox]
-  setup -- "Continue (consent ticked)" --> today
-  signin -- "Sign in" --> today
+  setup -- "Continue (consent ticked and saved)" --> today
+  signin -- "Sign in" --> consent
 
   today[Today<br/>/ · tab]
   trends[Trends<br/>/trends · tab]
@@ -32,7 +34,6 @@ flowchart TD
   trends -.->|"AI button on every tab (disabled)"| ai[AI assistant<br/>#12, #13, #15]:::planned
 
   profile -- "Sign out" --> signin
-  profile -- "Preview tools" --> setup
 
   class signin,setup,profile real
   class today,trends,wellness,logsession,flag preview
@@ -72,7 +73,7 @@ Today, the saves validate but do not store anything: saving arrives with #5 (wel
 | Screen | Route | Reached from | Story | Status (10 Nov) |
 | --- | --- | --- | --- | --- |
 | Sign in | `/sign-in` | App start when signed out; Sign out | #1 | Real (Firebase) |
-| First-time setup | `/setup` | Create an account; Profile preview tools | #1 (AC4) | Screen real; consent **not stored** yet (DL-008) |
+| First-time setup | `/setup` | Create an account; any signed-in user without recorded consent | #1 (AC4) | Real: consent stored through `POST /me/health-consent` (DL-008) |
 | Today | `/` (tab) | Sign in, setup, closing any form | #7, #9 | Preview: states New user, Usual range, Flagged, Saved offline |
 | Trends | `/trends` (tab) | Tab bar | #7, #9 | Preview |
 | Profile | `/profile` (tab) | Tab bar | #1, #2 | Real: account, squads (create and join), sign out |
@@ -89,12 +90,13 @@ Today, the saves validate but do not store anything: saving arrives with #5 (wel
 - **Status first:** Today leads with one plain-language line, and a flag links to its explanation ("See why").
 - **Signed-out users can only reach Sign in:** the tab layout redirects anyone without a session, so no
   health screen is reachable without signing in.
+- **No health screen before consent:** the tab layout asks the API (`GET /me`) whether consent is
+  recorded and sends anyone without it to setup (#1 AC4). The API also refuses health-data writes
+  without consent, so the app check is not the only protection.
 
 ## 5. Gaps found while drawing the map
 
-- **Returning users skip setup.** Only a new account sees the consent screen. Once consent is stored
-  (DL-008, #1 AC4), an existing user without recorded consent must also be sent to setup before any
-  health-data screen.
-- **Setup can be reopened from Profile** through the preview tools. Remove this once consent is real.
+- ~~**Returning users skip setup.**~~ Fixed 20 Nov (#1 AC4, I-7): any user without recorded consent is sent to setup.
+- ~~**Setup can be reopened from Profile.**~~ Fixed 20 Nov: the preview link is removed.
 - **No recent-sessions screen** yet, although #4's acceptance criteria require one.
 - **Staff screens** (#10 squad overview) are not designed; they get their own map with the week 5 wireframes.
