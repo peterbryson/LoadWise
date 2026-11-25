@@ -5,9 +5,12 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { InlineMessage } from '@/components/InlineMessage';
+import { WaitingToSync } from '@/components/WaitingToSync';
 import { ApiError, apiBaseUrl, createApiClient, SavedSession } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { sessionTypeLabels, shortDay } from '@/lib/session-format';
+import { useOfflineSync } from '@/lib/offline-sync';
+import { sessionAccessibilityLabel, sessionTypeLabels, shortDay } from '@/lib/session-format';
+import { mergeSessions } from '@/lib/session-list';
 import { useTheme } from '@/theme/theme';
 
 type State =
@@ -18,14 +21,16 @@ type State =
 /**
  * #4 AC4: the "Latest session" card on Today, from `GET /sessions?limit=1`. It loads again each
  * time Today comes back into view, so a session that was just logged shows straight away. A failure
- * stays inside the card, so the rest of Today still works. Sessions saved offline and waiting to
- * sync are added with the offline queue (#6).
+ * stays inside the card, so the rest of Today still works.
+ * #6 AC4: a newer session still waiting to sync is shown instead, marked as waiting. With no signal
+ * the API call fails, so a waiting session is shown in place of the error.
  */
 export function LatestSessionCard() {
   const router = useRouter();
   const { colors } = useTheme();
   const { getIdToken } = useAuth();
   const api = useMemo(() => createApiClient({ baseUrl: apiBaseUrl, getIdToken }), [getIdToken]);
+  const { pending, syncCount } = useOfflineSync();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
 
@@ -45,8 +50,9 @@ export function LatestSessionCard() {
       return () => {
         cancelled = true;
       };
-      // attempt is a dependency so that Try again loads once more.
-    }, [api, attempt]),
+      // attempt is a dependency so that Try again loads once more, and syncCount so that a session
+      // that has just synced replaces its waiting copy.
+    }, [api, attempt, syncCount]),
   );
 
   function retry() {
@@ -54,13 +60,17 @@ export function LatestSessionCard() {
     setAttempt((value) => value + 1);
   }
 
-  if (state.kind === 'loaded' && state.latest) {
-    const session = state.latest;
+  const session =
+    state.kind === 'loading'
+      ? undefined
+      : mergeSessions(state.kind === 'loaded' && state.latest ? [state.latest] : [], pending)[0];
+
+  if (session) {
     return (
       <Pressable
         onPress={() => router.push('/sessions')}
         accessibilityRole="link"
-        accessibilityLabel="Latest session. Show recent sessions"
+        accessibilityLabel={`Latest session: ${sessionAccessibilityLabel(session)}. Show recent sessions`}
       >
         <Card gap={2}>
           <AppText variant="caption" color="textMuted">
@@ -70,6 +80,7 @@ export function LatestSessionCard() {
           <AppText variant="caption" color="textMuted">
             {`${shortDay(session.date)} · RPE ${session.rpe} · ${session.load} AU`}
           </AppText>
+          {session.waiting ? <WaitingToSync /> : null}
         </Card>
       </Pressable>
     );

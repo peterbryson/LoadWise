@@ -9,6 +9,7 @@ import { LatestSessionCard } from '@/components/LatestSessionCard';
 import { Metric, MetricRow } from '@/components/Metric';
 import { PreviewBanner } from '@/components/PreviewBanner';
 import { ProgressBar, Screen, ScreenHeader } from '@/components/Screen';
+import { SyncStatusCard } from '@/components/SyncStatusCard';
 import { todayCaption } from '@/lib/dates';
 import { sample } from '@/preview/sample-data';
 
@@ -23,7 +24,8 @@ const states = [
 
 /**
  * Today: status first, then the numbers (DL-006). Every figure here is Figma sample data except the
- * Latest session card, which shows the athlete's newest saved session (#4 AC4).
+ * Latest session card, which shows the athlete's newest saved session (#4 AC4), and the sync
+ * status card, which shows entries saved on this device that are waiting to sync (#6).
  */
 export default function TodayScreen() {
   const router = useRouter();
@@ -38,6 +40,9 @@ export default function TodayScreen() {
         state={state}
         onStateChange={setState}
       />
+
+      {/* #6: real queue state, not part of the preview. */}
+      <SyncStatusCard />
 
       {state === 'new' ? (
         <>
