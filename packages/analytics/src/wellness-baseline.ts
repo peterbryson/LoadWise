@@ -4,6 +4,8 @@
  * All four items are scored 1 to 5 with 5 always the best answer, so no item is reverse-scored.
  */
 
+import { addDays, daysBetween } from './dates';
+
 export const WELLNESS_ITEMS = ['sleep', 'soreness', 'fatigue', 'stress'] as const;
 export type WellnessItem = (typeof WELLNESS_ITEMS)[number];
 
@@ -43,37 +45,19 @@ export const MIN_BASELINE_CHECK_INS = 14;
 const AVERAGE_WINDOW_DAYS = 7;
 const MAX_TREND_WEEKS = 52;
 
-const MS_PER_DAY = 86_400_000;
-const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
-
-// A tiny private date helper so this file does not depend on #7's work in progress. It should be
-// replaced by the shared analytics date helper once that is merged.
-/** Days since 1970-01-01 for a YYYY-MM-DD calendar date. UTC is used only as a time-zone-free calendar. */
-function dayNumber(isoDate: string): number {
-  const match = ISO_DATE.exec(isoDate);
-  if (match) {
-    const [, y, m, d] = match.map(Number);
-    const ms = Date.UTC(y, m - 1, d);
-    // Date.UTC rolls 2026-11-31 over to 1 Dec, so a round trip catches impossible dates.
-    if (new Date(ms).toISOString().slice(0, 10) === isoDate) return ms / MS_PER_DAY;
-  }
-  throw new RangeError(`Expected a YYYY-MM-DD date, got "${isoDate}"`);
-}
-
-function isoDateOf(day: number): string {
-  return new Date(day * MS_PER_DAY).toISOString().slice(0, 10);
-}
-
 /** Entries whose date is from `fromDaysBefore` to `toDaysBefore` days before `today`, inclusive. */
 function entriesBetween(
   entries: readonly WellnessEntry[],
-  today: number,
+  today: string,
   toDaysBefore: number,
   fromDaysBefore: number,
 ): WellnessEntry[] {
+  // Counting from the window's first day also rejects an invalid `today` when there are no entries.
+  const first = addDays(today, -fromDaysBefore);
+  const length = fromDaysBefore - toDaysBefore;
   return entries.filter((entry) => {
-    const daysBefore = today - dayNumber(entry.date);
-    return daysBefore >= toDaysBefore && daysBefore <= fromDaysBefore;
+    const daysIn = daysBetween(first, entry.date);
+    return daysIn >= 0 && daysIn <= length;
   });
 }
 
@@ -86,7 +70,7 @@ function sampleSd(values: readonly number[], valuesMean: number): number {
   return Math.sqrt(squares / (values.length - 1));
 }
 
-function baselineAt(entries: readonly WellnessEntry[], today: number): WellnessBaseline | null {
+function baselineAt(entries: readonly WellnessEntry[], today: string): WellnessBaseline | null {
   // Days without a check-in are skipped, not counted as zero (DL-007).
   const window = entriesBetween(entries, today, 1, BASELINE_WINDOW_DAYS);
   if (window.length < MIN_BASELINE_CHECK_INS) return null;
@@ -99,7 +83,7 @@ function baselineAt(entries: readonly WellnessEntry[], today: number): WellnessB
   return { count: window.length, items };
 }
 
-function averageAt(entries: readonly WellnessEntry[], today: number): WellnessAverage | null {
+function averageAt(entries: readonly WellnessEntry[], today: string): WellnessAverage | null {
   const window = entriesBetween(entries, today, 0, AVERAGE_WINDOW_DAYS - 1);
   if (window.length === 0) return null;
   const items = {} as WellnessScores;
@@ -115,7 +99,7 @@ function averageAt(entries: readonly WellnessEntry[], today: number): WellnessAv
  * @throws RangeError if `today` or an entry date is not a valid YYYY-MM-DD date.
  */
 export function wellnessBaseline(entries: readonly WellnessEntry[], today: string): WellnessBaseline | null {
-  return baselineAt(entries, dayNumber(today));
+  return baselineAt(entries, today);
 }
 
 /**
@@ -123,7 +107,7 @@ export function wellnessBaseline(entries: readonly WellnessEntry[], today: strin
  * towards the 14 needed while wellnessBaseline() is still null.
  */
 export function baselineCheckIns(entries: readonly WellnessEntry[], today: string): number {
-  return entriesBetween(entries, dayNumber(today), 1, BASELINE_WINDOW_DAYS).length;
+  return entriesBetween(entries, today, 1, BASELINE_WINDOW_DAYS).length;
 }
 
 /**
@@ -132,7 +116,7 @@ export function baselineCheckIns(entries: readonly WellnessEntry[], today: strin
  * @returns null when there is no check-in in those 7 days.
  */
 export function wellnessSevenDayAverage(entries: readonly WellnessEntry[], today: string): WellnessAverage | null {
-  return averageAt(entries, dayNumber(today));
+  return averageAt(entries, today);
 }
 
 /**
@@ -149,9 +133,8 @@ export function wellnessTrend(
   if (!Number.isInteger(weeks) || weeks < 1 || weeks > MAX_TREND_WEEKS) {
     throw new RangeError(`Weeks must be an integer from 1 to ${MAX_TREND_WEEKS}, got ${weeks}`);
   }
-  const todayNumber = dayNumber(today);
   return Array.from({ length: weeks }, (_, index) => {
-    const end = todayNumber - (weeks - 1 - index) * AVERAGE_WINDOW_DAYS;
-    return { endDate: isoDateOf(end), average: averageAt(entries, end), baseline: baselineAt(entries, end) };
+    const end = addDays(today, -(weeks - 1 - index) * AVERAGE_WINDOW_DAYS);
+    return { endDate: end, average: averageAt(entries, end), baseline: baselineAt(entries, end) };
   });
 }
