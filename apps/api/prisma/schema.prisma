@@ -69,8 +69,9 @@ model Squad {
 }
 
 /// A user's role in one squad. For athletes, consentGiven is the current consent state for this
-/// squad, which the API guards check on every staff request (NFR 2). It is a cached copy of the
-/// latest ConsentEvent and is only ever written in the same transaction as a new event.
+/// squad, which StaffAccessService reads from the database on every staff request (#11, NFR 2.2).
+/// It is a cached copy of the latest ConsentEvent and is only written by
+/// SquadConsentService.setConsent, in the same transaction as a new event (#3).
 /// consentGiven is ignored for staff memberships.
 model Membership {
   id           String   @id @default(uuid())

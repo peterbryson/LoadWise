@@ -62,5 +62,12 @@ api-image:
       else
         /kaniko/executor --context "$CI_PROJECT_DIR" --dockerfile "$CI_PROJECT_DIR/apps/api/Dockerfile" --no-push
       fi
+  # Only build when a file that goes into the image changed (see .dockerignore), so pushes that touch
+  # only docs or the mobile app skip about 4 minutes of Kaniko (Sprint 2 retro action, NFR 5).
   rules:
     - if: $CI_COMMIT_BRANCH
+      changes:
+        - apps/api/**/*
+        - packages/**/*
+        - apps/mobile/package.json
+        - '{package.json,pnpm-lock.yaml,pnpm-workspace.yaml,turbo.json,tsconfig*.json,.dockerignore,.gitlab-ci.yml}'

@@ -181,3 +181,57 @@ describe('FR1: session calls (#4)', () => {
     expect(fetchFn).toHaveBeenCalledWith('http://api.test/sessions?limit=1', expect.objectContaining({ method: 'GET' }));
   });
 });
+
+describe('FR2: load metrics call (#7)', () => {
+  it('reads weekly load and ACWR from GET /me/load with the token', async () => {
+    const load = {
+      today: '2026-11-25',
+      weeks: [{ weekStart: '2026-11-23', load: 420, partial: true }],
+      usualWeek: null,
+      acwr: { model: 'EWMA', value: null, availableFrom: '2026-12-02' },
+      monotony: null,
+      strain: null,
+    };
+    const { client, fetchFn } = clientReturning(jsonResponse(200, load));
+
+    await expect(client.myLoad()).resolves.toEqual(load);
+    expect(fetchFn).toHaveBeenCalledWith('http://api.test/me/load', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer id-token' },
+      body: undefined,
+    });
+  });
+});
+
+describe('FR4: squad list calls (#2 AC3)', () => {
+  it('reads the caller’s squads from GET /squads', async () => {
+    const squads = [{ squadId: 's1', squadName: 'Harriers', role: 'ATHLETE', consentGiven: false }];
+    const { client, fetchFn } = clientReturning(jsonResponse(200, squads));
+
+    await expect(client.mySquads()).resolves.toEqual(squads);
+    expect(fetchFn).toHaveBeenCalledWith('http://api.test/squads', expect.objectContaining({ method: 'GET' }));
+  });
+
+  it('encodes the squad id in the members path', async () => {
+    const { client, fetchFn } = clientReturning(jsonResponse(200, []));
+
+    await client.squadMembers('a/b?c');
+    expect(fetchFn).toHaveBeenCalledWith(
+      'http://api.test/squads/a%2Fb%3Fc/members',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+});
+
+describe('NFR2: per-squad consent call (#3)', () => {
+  it('sends PUT /squads/:squadId/consent with the share flag', async () => {
+    const { client, fetchFn } = clientReturning(jsonResponse(200, { squadId: 's1', consentGiven: false }));
+
+    await expect(client.setSquadConsent('s1', false)).resolves.toEqual({ squadId: 's1', consentGiven: false });
+    expect(fetchFn).toHaveBeenCalledWith('http://api.test/squads/s1/consent', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer id-token' },
+      body: JSON.stringify({ share: false }),
+    });
+  });
+});

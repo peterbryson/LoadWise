@@ -1,4 +1,5 @@
 import { CreateSquadSchema, JoinSquadSchema, StaffRole } from '@loadwise/shared';
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
@@ -6,6 +7,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { InlineMessage } from '@/components/InlineMessage';
 import { ListGroup, ListRow } from '@/components/ListRow';
+import { MySquads } from '@/components/MySquads';
 import { OptionRow } from '@/components/Option';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
@@ -32,9 +34,11 @@ function errorText(error: unknown): string {
 }
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user, signOut, getIdToken } = useAuth();
   const { colors, preference, setPreference } = useTheme();
   const api = useMemo(() => createApiClient({ baseUrl: apiBaseUrl, getIdToken }), [getIdToken]);
+  const [squadsVersion, setSquadsVersion] = useState(0);
 
   const email = user?.email ?? '';
   const name = user?.displayName || email.split('@')[0];
@@ -65,12 +69,22 @@ export default function ProfileScreen() {
       </ListGroup>
 
       <ListGroup title="Coming later">
-        <ListRow label="My squads" />
         <ListRow label="Connected devices" />
         <ListRow label="Reminders" />
       </ListGroup>
 
-      <SquadTools api={api} />
+      <MySquads
+        api={api}
+        refreshKey={squadsVersion}
+        onOpenMembers={(squad) =>
+          router.push({
+            pathname: '/squad-members',
+            params: { squadId: squad.squadId, squadName: squad.squadName },
+          })
+        }
+      />
+
+      <SquadTools api={api} onChanged={() => setSquadsVersion((n) => n + 1)} />
 
       <Card gap={10}>
         <AppText variant="heading">Preview tools</AppText>
@@ -100,7 +114,7 @@ export default function ProfileScreen() {
  * Not in the Figma V1 design: a plain section that calls the real squad endpoints (#2), so the
  * API can be seen working from the app. Inputs are checked with the same Zod schemas as the API.
  */
-function SquadTools({ api }: { api: ReturnType<typeof createApiClient> }) {
+function SquadTools({ api, onChanged }: { api: ReturnType<typeof createApiClient>; onChanged: () => void }) {
   const [apiUp, setApiUp] = useState<boolean | null>(null);
   const [squadName, setSquadName] = useState('');
   const [role, setRole] = useState<StaffRole>('COACH');
@@ -125,6 +139,7 @@ function SquadTools({ api }: { api: ReturnType<typeof createApiClient> }) {
       const squad = await api.createSquad(parsed.data);
       setResult({ kind: 'info', text: `Created "${squad.name}". Invite code: ${squad.inviteCode}` });
       setSquadName('');
+      onChanged();
     } catch (error) {
       setResult({ kind: 'error', text: errorText(error) });
     } finally {
@@ -142,6 +157,7 @@ function SquadTools({ api }: { api: ReturnType<typeof createApiClient> }) {
       const joined = await api.joinSquad(parsed.data.inviteCode);
       setResult({ kind: 'info', text: `Joined "${joined.squadName}" as an athlete.` });
       setCode('');
+      onChanged();
     } catch (error) {
       setResult({ kind: 'error', text: errorText(error) });
     } finally {
