@@ -3,11 +3,12 @@ import {
   baselineCheckIns,
   BASELINE_WINDOW_DAYS,
   evaluateFlags,
+  flagChecks,
   MIN_BASELINE_CHECK_INS,
   wellnessBaseline,
   wellnessTrend,
 } from '@loadwise/analytics';
-import type { Flag, FlagThresholds, WellnessEntry, WellnessTrendPoint } from '@loadwise/analytics';
+import type { Flag, FlagChecks, FlagInputs, FlagThresholds, WellnessEntry, WellnessTrendPoint } from '@loadwise/analytics';
 import { PrismaService } from '../prisma/prisma.service';
 import { ACWR_SOURCE, AcwrSource } from './acwr-source';
 import { CLOCK, Clock, isoDaysBefore, londonDate } from './london-date';
@@ -23,6 +24,11 @@ export interface CurrentFlags {
   /** The UK calendar day the flags are for, YYYY-MM-DD. */
   date: string;
   flags: Flag[];
+  /** Which rules ran. An empty `flags` is only an all-clear when both are 'checked'. */
+  checks: FlagChecks;
+  /** Check-ins in the current baseline window, for "n of 14" while the baseline builds. */
+  baselineCheckIns: number;
+  minCheckIns: number;
 }
 
 /** `GET /me/wellness-trend` (#9 AC3). */
@@ -55,11 +61,14 @@ export class FlagsService {
       this.acwr.acwrFor(athleteId, today),
     ]);
     const todayEntry = entries.find((entry) => entry.date === today) ?? null;
-    const flags = evaluateFlags(
-      { acwr, wellnessToday: todayEntry, baseline: wellnessBaseline(entries, today) },
-      this.thresholds,
-    );
-    return { date: today, flags };
+    const inputs: FlagInputs = { acwr, wellnessToday: todayEntry, baseline: wellnessBaseline(entries, today) };
+    return {
+      date: today,
+      flags: evaluateFlags(inputs, this.thresholds),
+      checks: flagChecks(inputs),
+      baselineCheckIns: baselineCheckIns(entries, today),
+      minCheckIns: MIN_BASELINE_CHECK_INS,
+    };
   }
 
   async wellnessTrend(athleteId: string): Promise<WellnessTrendResponse> {

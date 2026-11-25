@@ -1,4 +1,4 @@
-import { DEFAULT_FLAG_THRESHOLDS, evaluateFlags } from './flags';
+import { DEFAULT_FLAG_THRESHOLDS, evaluateFlags, flagChecks } from './flags';
 import type { WellnessBaseline, WellnessScores } from './wellness-baseline';
 
 const goodDay: WellnessScores = { sleep: 4, soreness: 4, fatigue: 4, stress: 4 };
@@ -130,5 +130,24 @@ describe('FR2/DL-006: flag wording is decision support, never diagnostic', () =>
     for (const flag of flags) {
       expect(flag.reason).not.toMatch(/injur|risk|diagnos|rest|reduce|return to play/i);
     }
+  });
+});
+
+describe('FR2: which flag checks could run (#9 AC1, no false all-clear)', () => {
+  it('reports both checks as run when ACWR, a baseline and a check-in today are all available', () => {
+    expect(flagChecks({ acwr: 1.1, wellnessToday: goodDay, baseline })).toEqual({ acwr: 'checked', wellness: 'checked' });
+  });
+
+  it('reports ACWR as unavailable while it is null (first 28 days)', () => {
+    expect(flagChecks({ acwr: null, wellnessToday: goodDay, baseline }).acwr).toBe('unavailable');
+  });
+
+  it('reports no baseline while there are fewer than 14 check-ins, even with a check-in today', () => {
+    expect(flagChecks({ acwr: 1.1, wellnessToday: goodDay, baseline: null }).wellness).toBe('no-baseline');
+    expect(flagChecks({ acwr: 1.1, wellnessToday: null, baseline: null }).wellness).toBe('no-baseline');
+  });
+
+  it('reports no check-in when there is a baseline but no check-in today', () => {
+    expect(flagChecks({ acwr: 1.1, wellnessToday: null, baseline }).wellness).toBe('no-check-in');
   });
 });

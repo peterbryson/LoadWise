@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react-native';
-import type { Flag } from '@loadwise/analytics';
+import type { Flag, FlagChecks } from '@loadwise/analytics';
 import { ApiError } from '@/lib/api';
+import type { CurrentFlags } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { renderScreen } from '@/test-utils';
 import FlagScreen from '@/app/flag';
@@ -42,8 +43,10 @@ const sleepFlag: Flag = {
   reason: 'Your sleep score today is 2, more than 1.5 SD below your usual 4.0 (guide: 2.5).',
 };
 
-function flagsResponse(flags: Flag[]) {
-  return { date: '2026-11-25', flags };
+const allChecked: FlagChecks = { acwr: 'checked', wellness: 'checked' };
+
+function flagsResponse(flags: Flag[], checks: FlagChecks = allChecked, baselineCheckIns = 20): CurrentFlags {
+  return { date: '2026-11-25', flags, checks, baselineCheckIns, minCheckIns: 14 };
 }
 
 beforeEach(() => {
@@ -148,5 +151,51 @@ describe('FR2 #9: flag detail shows reason, value and threshold (AC2)', () => {
     mockMyFlags.mockRejectedValueOnce(new ApiError(0, 'unreachable'));
     await renderScreen(<FlagScreen />);
     expect(await screen.findByText('You are offline. Flags load when you are back online.')).toBeTruthy();
+  });
+});
+
+describe('FR2 #9: no flags is never shown as an all-clear when a check could not run (AC1)', () => {
+  it.each([
+    ['Today', () => <TodayScreen />],
+    ['the flag screen', () => <FlagScreen />],
+  ])('on %s, says both checks ran only when they did', async (_name, ui) => {
+    mockMyFlags.mockResolvedValue(flagsResponse([]));
+    await renderScreen(ui());
+
+    expect(await screen.findByText('Nothing has been flagged today')).toBeTruthy();
+    expect(screen.getByText('Load ratio: checked, within the guide')).toBeTruthy();
+    expect(screen.getByText('Wellness: checked, within the guide')).toBeTruthy();
+  });
+
+  it.each([
+    ['Today', () => <TodayScreen />],
+    ['the flag screen', () => <FlagScreen />],
+  ])('on %s, says which checks could not run instead of an all-clear', async (_name, ui) => {
+    mockMyFlags.mockResolvedValue(flagsResponse([], { acwr: 'unavailable', wellness: 'no-baseline' }, 9));
+    await renderScreen(ui());
+
+    expect(await screen.findByText('Not everything could be checked today')).toBeTruthy();
+    expect(screen.queryByText('Nothing has been flagged today')).toBeNull();
+    expect(screen.queryByText(/not outside your usual range/)).toBeNull();
+    expect(screen.getByText('Load ratio: not available until 28 days after your first logged session')).toBeTruthy();
+    expect(screen.getByText('Wellness: building your baseline (9 of 14 check-ins)')).toBeTruthy();
+  });
+
+  it('asks for a check-in today when the baseline exists but today has no check-in', async () => {
+    mockMyFlags.mockResolvedValue(flagsResponse([], { acwr: 'checked', wellness: 'no-check-in' }));
+    await renderScreen(<TodayScreen />);
+
+    expect(await screen.findByText('Not everything could be checked today')).toBeTruthy();
+    expect(screen.getByText('Load ratio: checked, within the guide')).toBeTruthy();
+    expect(screen.getByText('Wellness: check in today to compare')).toBeTruthy();
+  });
+
+  it('on the flag screen, shows which checks ran alongside the flags', async () => {
+    mockMyFlags.mockResolvedValue(flagsResponse([acwrFlag], { acwr: 'checked', wellness: 'no-check-in' }));
+    await renderScreen(<FlagScreen />);
+
+    expect(await screen.findByText(acwrFlag.reason)).toBeTruthy();
+    expect(screen.getByText('Load ratio: checked, flagged')).toBeTruthy();
+    expect(screen.getByText('Wellness: check in today to compare')).toBeTruthy();
   });
 });

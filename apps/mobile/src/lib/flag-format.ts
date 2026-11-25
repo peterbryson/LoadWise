@@ -1,4 +1,5 @@
 import type { Flag, WellnessItem } from '@loadwise/analytics';
+import type { CurrentFlags } from '@/lib/api';
 
 export const wellnessItemLabels: Record<WellnessItem, string> = {
   sleep: 'Sleep',
@@ -37,4 +38,28 @@ export function flagMeaning(flag: Flag): string {
     return 'Your training load over the last 7 days is high compared with the last 28 days. A sudden rise is worth reviewing, even if you feel fine.';
   }
   return 'Today’s answer is well below your usual answers over the last 28 days. One low score can have many causes.';
+}
+
+/** True only when both rules ran, the one case where no flags can be called "nothing flagged". */
+export function allChecksRan({ checks }: CurrentFlags): boolean {
+  return checks.acwr === 'checked' && checks.wellness === 'checked';
+}
+
+/** One line per rule saying whether it ran and, if not, why (#9: no false all-clear). */
+export function checkLines(data: CurrentFlags): string[] {
+  const flagged = (rule: Flag['rule']) => data.flags.some((flag) => flag.rule === rule);
+  const result = (rule: Flag['rule']) => (flagged(rule) ? 'checked, flagged' : 'checked, within the guide');
+
+  const acwr =
+    data.checks.acwr === 'checked'
+      ? `Load ratio: ${result('ACWR_HIGH')}`
+      : 'Load ratio: not available until 28 days after your first logged session';
+
+  const wellness = {
+    checked: `Wellness: ${result('WELLNESS_LOW')}`,
+    'no-baseline': `Wellness: building your baseline (${data.baselineCheckIns} of ${data.minCheckIns} check-ins)`,
+    'no-check-in': 'Wellness: check in today to compare',
+  }[data.checks.wellness];
+
+  return [acwr, wellness];
 }

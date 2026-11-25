@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { NoFlagsStatus } from '@/components/FlagChecks';
 import { Icon } from '@/components/Icon';
 import { InlineMessage } from '@/components/InlineMessage';
 import type { ApiClient } from '@/lib/api';
@@ -14,7 +15,7 @@ const loadFlags = (api: ApiClient) => api.myFlags();
 
 /**
  * #9: the status line at the top of Today. Shows each flag from `GET /me/flags` with its reason,
- * or says nothing has been flagged. A failure stays inside the card.
+ * or which checks ran when nothing is flagged. A failure stays inside the card.
  */
 export function FlagStatusCard() {
   const { colors } = useTheme();
@@ -63,25 +64,12 @@ export function FlagStatusCard() {
         </>
       ) : null}
 
-      {state.kind === 'loaded' ? (
-        <>
-          <View style={styles.titleRow}>
-            <Icon name="check-status" size={24} />
-            <AppText variant="heading" style={styles.flex}>
-              Nothing has been flagged today
-            </AppText>
-          </View>
-          <AppText variant="caption" color="textMuted">
-            Flags appear when your load ratio or a wellness score moves outside your usual range.
-          </AppText>
-        </>
-      ) : null}
+      {state.kind === 'loaded' ? <NoFlagsStatus data={state.data} /> : null}
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   flagTitle: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   seeWhy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 24 },
   flex: { flex: 1 },

@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { CheckLines, NoFlagsStatus } from '@/components/FlagChecks';
 import { Icon } from '@/components/Icon';
 import { InlineMessage } from '@/components/InlineMessage';
 import { NavHeader, Screen } from '@/components/Screen';
@@ -41,14 +42,20 @@ export default function FlagScreen() {
 
       {state.kind === 'loaded' && state.data.flags.length === 0 ? (
         <Card gap={6}>
-          <AppText variant="heading">Nothing has been flagged today</AppText>
-          <AppText variant="body" color="textMuted">
-            Your load ratio and wellness scores are not outside your usual range.
-          </AppText>
+          <NoFlagsStatus data={state.data} />
         </Card>
       ) : null}
 
       {state.kind === 'loaded' ? state.data.flags.map((flag) => <FlagDetail key={`${flag.rule}-${flag.metric}`} flag={flag} />) : null}
+
+      {state.kind === 'loaded' && state.data.flags.length > 0 ? (
+        <Card gap={6}>
+          <AppText variant="caption" color="textMuted">
+            What was checked today
+          </AppText>
+          <CheckLines data={state.data} />
+        </Card>
+      ) : null}
 
       {state.kind === 'loaded' && state.data.flags.length > 0 ? (
         <Card gap={6}>

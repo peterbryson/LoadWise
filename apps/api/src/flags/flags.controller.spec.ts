@@ -100,7 +100,54 @@ describe('flags API', () => {
     it('returns no flags for an athlete with no data', async () => {
       const res = await request(app.getHttpServer()).get('/me/flags').set(asAthlete).expect(200);
 
-      expect(res.body).toEqual({ date: TODAY, flags: [] });
+      expect(res.body).toEqual({
+        date: TODAY,
+        flags: [],
+        checks: { acwr: 'unavailable', wellness: 'no-baseline' },
+        baselineCheckIns: 0,
+        minCheckIns: 14,
+      });
+    });
+
+    describe('says which checks ran, so no flags is never a false all-clear', () => {
+      it('reports both checks as run with ACWR, a 14+ check-in baseline and a check-in today', async () => {
+        acwrSource.acwrFor.mockResolvedValue(1.1);
+        prisma.wellnessEntry.findMany.mockResolvedValue([...baselineRows, row(0, 4)]);
+
+        const res = await request(app.getHttpServer()).get('/me/flags').set(asAthlete).expect(200);
+
+        expect(res.body).toMatchObject({ flags: [], checks: { acwr: 'checked', wellness: 'checked' }, baselineCheckIns: 15 });
+      });
+
+      it('reports ACWR as unavailable while the ACWR source has no value', async () => {
+        prisma.wellnessEntry.findMany.mockResolvedValue([...baselineRows, row(0, 4)]);
+
+        const res = await request(app.getHttpServer()).get('/me/flags').set(asAthlete).expect(200);
+
+        expect(res.body.checks).toEqual({ acwr: 'unavailable', wellness: 'checked' });
+      });
+
+      it('reports the baseline as building, with the count so far, below 14 check-ins', async () => {
+        acwrSource.acwrFor.mockResolvedValue(1.1);
+        prisma.wellnessEntry.findMany.mockResolvedValue([...baselineRows.slice(0, 13), row(0, 1, 1)]);
+
+        const res = await request(app.getHttpServer()).get('/me/flags').set(asAthlete).expect(200);
+
+        expect(res.body).toMatchObject({
+          checks: { acwr: 'checked', wellness: 'no-baseline' },
+          baselineCheckIns: 13,
+          minCheckIns: 14,
+        });
+      });
+
+      it('reports no check-in today when the baseline exists but today has no check-in', async () => {
+        acwrSource.acwrFor.mockResolvedValue(1.1);
+        prisma.wellnessEntry.findMany.mockResolvedValue(baselineRows);
+
+        const res = await request(app.getHttpServer()).get('/me/flags').set(asAthlete).expect(200);
+
+        expect(res.body.checks).toEqual({ acwr: 'checked', wellness: 'no-check-in' });
+      });
     });
 
     it("reads only the caller's check-ins from the 28-day baseline window to today", async () => {

@@ -34,6 +34,24 @@ export interface FlagInputs {
   baseline: WellnessBaseline | null;
 }
 
+/**
+ * Which rules could actually be evaluated today. An empty flag list only means "nothing is
+ * outside the guides" when both checks ran, so screens must not show an all-clear otherwise.
+ */
+export interface FlagChecks {
+  acwr: 'checked' | 'unavailable';
+  /** no-baseline takes priority: without 14 check-ins, checking in today still cannot be compared. */
+  wellness: 'checked' | 'no-baseline' | 'no-check-in';
+}
+
+/** Mirrors the early returns in acwrFlag() and wellnessFlags(), so it says which rules ran. */
+export function flagChecks({ acwr, wellnessToday, baseline }: FlagInputs): FlagChecks {
+  let wellness: FlagChecks['wellness'] = 'checked';
+  if (baseline === null) wellness = 'no-baseline';
+  else if (wellnessToday === null) wellness = 'no-check-in';
+  return { acwr: acwr === null ? 'unavailable' : 'checked', wellness };
+}
+
 function checkThresholds({ acwrHigh, wellnessSdBelow }: FlagThresholds): void {
   if (!Number.isFinite(acwrHigh) || acwrHigh <= 0) {
     throw new RangeError(`acwrHigh must be a positive number, got ${acwrHigh}`);

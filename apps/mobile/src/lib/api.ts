@@ -1,6 +1,6 @@
 import { HEALTH_DATA_NOTICE_VERSION } from '@loadwise/shared';
 import type { CreateSquad, SessionLog, StaffRole, WellnessCheck } from '@loadwise/shared';
-import type { Flag, WellnessTrendPoint } from '@loadwise/analytics';
+import type { Flag, FlagChecks, WellnessTrendPoint } from '@loadwise/analytics';
 
 /** An API failure with a message that is safe to show on screen. */
 export class ApiError extends Error {
@@ -50,6 +50,10 @@ export interface SavedSession extends SessionLog {
 export interface CurrentFlags {
   date: string;
   flags: Flag[];
+  /** Which rules ran. No flags is only an all-clear when both are 'checked'. */
+  checks: FlagChecks;
+  baselineCheckIns: number;
+  minCheckIns: number;
 }
 
 /** 7-day wellness averages against the athlete's baseline, from `GET /me/wellness-trend` (#9 AC3). */
