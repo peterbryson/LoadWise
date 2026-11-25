@@ -12,17 +12,4 @@ export const sample = {
     guide: '1.5',
   },
   wellnessInsight: 'Sleep is lower than your recent average.',
-  weeklyLoad: [
-    { label: 'Wk 1', height: 43 },
-    { label: 'Wk 2', height: 48 },
-    { label: 'Wk 3', height: 46 },
-    { label: 'Wk 4', height: 49 },
-    { label: 'Wk 5', height: 47 },
-  ],
-  nowBar: { label: 'Now', value: '3,240', height: 76 },
-  firstWeeks: [
-    { label: 'Last wk', value: '980', height: 60 },
-    { label: 'Now', value: '1,240', height: 76 },
-  ],
-  loggedSoFar: '8 check-ins and 5 sessions. Keep logging for a fuller picture.',
 } as const;

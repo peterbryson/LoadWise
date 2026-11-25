@@ -18,6 +18,70 @@ Template:
 
 ---
 
+## DL-017: Claude Code reads and updates the GitLab backlog through the glab CLI
+
+- Date: 25 Nov 2026
+- Status: Accepted (options drafted by Claude in chat; Peter chose glab on 25 Nov)
+- Context: GitLab on gitlab-se is the backlog and the assessed record of issues, milestones and
+  merge requests (DL-011, DL-013). Claude Code could not read it, so issue text had to be copied in
+  by hand, which slowed down story work. Peter asked whether the issues could be copied to the
+  personal GitHub mirror so Claude Code could read them there.
+- Options considered:
+  - **Mirror the issues to GitHub.** GitHub only imports code from GitLab, not issues, so this
+    needs a sync script. Two backlogs would drift apart, and the module requires gitlab-se as the
+    record, so a stale read-only copy would weaken the Ch2 evidence.
+  - **Copy issue text into prompts by hand.** No setup, but slow and error-prone.
+  - **GitLab CLI (`glab`) on the laptop (chosen).** Claude Code in VS Code runs locally and can
+    already reach gitlab-se, so it can read issues and acceptance criteria, open merge requests
+    and check pipelines directly. GitLab stays the single record.
+- Decision: `glab` 1.133.0 installed with winget and signed in to gitlab-se with a legacy personal
+  access token (`glab-cli`, `api` scope, expires 31 Dec 2026), stored in the Windows keyring rather
+  than a file. The local `CLAUDE.md` sets the rules: Claude Code reads issues, merge requests and
+  pipelines freely; it opens merge requests only when Peter says so in that session; merging,
+  closing or relabelling issues and changing milestones only when Peter explicitly asks; it never
+  touches project settings, CI variables or the token.
+- Consequences: issue context reaches Claude Code without copying, and merge requests are opened
+  with `Closes #<id>`, so issue history stays accurate. The token must be renewed before
+  31 Dec 2026. A broad `api` token on the laptop is a new secret to protect (R15); it was typed
+  only into the `glab` prompt and never into a chat.
+
+---
+
+## DL-016: From two-week Scrum sprints to Kanban-style continuous flow
+
+- Date: 25 Nov 2026
+- Status: Accepted (Peter's decision, 25 Nov; written up by Claude in chat at his request)
+- Context: Sprints 1 and 2 both ended in a cliff rather than a slope: in Sprint 2 there was one
+  commit from 11 to 19 Nov and 35 on 20 Nov, and 9 of 14 committed points were delivered. Project
+  time is irregular: Thursdays are freelancing, other modules have deadlines on 7 and 8 Dec and an
+  exam on 17 Dec, and work arrives in bursts when Peter has a free afternoon. Fixed two-week
+  commitments kept being missed and re-planned (Sprint 1 extended, Sprint 2 shortened, Sprint 3
+  extended to 13 Dec), so the sprint dates were recording slippage rather than guiding work.
+- Options considered:
+  - **Keep two-week Scrum.** Matches the Problem Specification and gives clean burndowns, but the
+    commitments do not fit irregular capacity, and two sprints show the same end-loaded pattern.
+  - **One-week sprints.** More frequent checkpoints, but more planning overhead for the same
+    irregular capacity.
+  - **Kanban-style continuous flow (chosen).** Stories are pulled in priority order from the
+    GitLab board when there is time, built (often with several Claude Code sessions in separate
+    git worktrees), and merged only after Peter has reviewed each merge request himself.
+- Decision: no sprint end dates or per-story dates from 25 Nov. Kept: the GitLab board and
+  issues, the priority order (#7, #9, #2, #3, #11, #6, #8, #10, then #12 to #14), the agreed
+  fallbacks (#10 as a simple list, #6 as a simplified queue; #3 and #11 never cut), the merge
+  request and Definition of Done rules, and the fixed deadlines (interim video 18 Jan 2027, final
+  submission 19 Apr 2027). One limit replaces the sprint commitment: merge requests are reviewed
+  and merged one at a time, and Peter must be able to explain each one before merging. A short
+  review (what merged, what is blocked, one process change) still happens about every two weeks.
+- Consequences: Ch2 evidence moves from burndowns to the board, cycle time (issue opened to
+  merged), a cumulative flow chart from GitLab data and the periodic reviews; Sprint 1 and 2
+  records stay as they are, as the evidence for this change. The "Sprint 3" milestone should be
+  replaced by an "MVP: interim video" milestone due 17 Jan. Without sprint deadlines the only
+  forcing date before January is the interim video, so the MVP (#1 to #11 on staging) must be
+  watched against it (R11). Generating several stories in parallel raises the risk that merged code
+  outpaces Peter's understanding of it (R16).
+
+---
+
 ## DL-015: CI publishes the staging image; deploying it is one manual command
 
 - Date: 20 Nov 2026

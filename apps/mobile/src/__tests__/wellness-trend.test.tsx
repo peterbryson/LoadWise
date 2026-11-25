@@ -13,11 +13,12 @@ jest.mock('expo-router', () => {
   function useFocusEffect(effect: () => void | (() => void)) {
     useEffect(effect, [effect]);
   }
-  return { useFocusEffect };
+  return { useFocusEffect, useRouter: () => ({ push: jest.fn() }) };
 });
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  createApiClient: () => ({ myWellnessTrend: mockMyWellnessTrend }),
+  // The load card is tested in trends.test.tsx, so here it just stays loading.
+  createApiClient: () => ({ myWellnessTrend: mockMyWellnessTrend, myLoad: () => new Promise(() => {}) }),
 }));
 jest.mock('@/lib/auth', () => ({ useAuth: jest.fn() }));
 

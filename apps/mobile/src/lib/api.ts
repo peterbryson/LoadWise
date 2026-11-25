@@ -1,5 +1,5 @@
 import { HEALTH_DATA_NOTICE_VERSION } from '@loadwise/shared';
-import type { CreateSquad, SessionLog, StaffRole, WellnessCheck } from '@loadwise/shared';
+import type { CreateSquad, MyLoad, SessionLog, StaffRole, WellnessCheck } from '@loadwise/shared';
 import type { Flag, FlagChecks, WellnessTrendPoint } from '@loadwise/analytics';
 
 /** An API failure with a message that is safe to show on screen. */
@@ -24,6 +24,22 @@ export interface JoinedSquad {
   squadId: string;
   squadName: string;
   role: 'ATHLETE';
+}
+
+/** One of the caller's squads, from `GET /squads`. Only staff get the invite code. */
+export type MySquad =
+  | { squadId: string; squadName: string; role: 'ATHLETE'; consentGiven: boolean }
+  | { squadId: string; squadName: string; role: StaffRole; inviteCode: string };
+
+/** A squad member, from `GET /squads/:squadId/members` (staff only). No health data. */
+export type SquadMember =
+  | { userId: string; displayName: string; role: 'ATHLETE'; consentGiven: boolean }
+  | { userId: string; displayName: string; role: StaffRole };
+
+/** The athlete's sharing state for one squad, from `PUT /squads/:squadId/consent`. */
+export interface SquadConsentState {
+  squadId: string;
+  consentGiven: boolean;
 }
 
 /** The signed-in user, from `GET /me`. */
@@ -94,7 +110,7 @@ async function readError(response: Response): Promise<ApiError> {
 }
 
 export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiClientOptions) {
-  async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, signedIn = true): Promise<T> {
+  async function request<T>(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown, signedIn = true): Promise<T> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (signedIn) headers.Authorization = `Bearer ${await getIdToken()}`;
 
@@ -116,6 +132,14 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     health: () => request<{ status: string }>('GET', '/health', undefined, false),
     createSquad: (input: CreateSquad) => request<CreatedSquad>('POST', '/squads', input),
     joinSquad: (inviteCode: string) => request<JoinedSquad>('POST', '/squads/join', { inviteCode }),
+    /** #2 AC3: every squad the signed-in user belongs to. */
+    mySquads: () => request<MySquad[]>('GET', '/squads'),
+    /** #2 AC3: a squad's members. 403 for athletes, 404 if the caller is not in the squad. */
+    squadMembers: (squadId: string) =>
+      request<SquadMember[]>('GET', `/squads/${encodeURIComponent(squadId)}/members`),
+    /** #3: start or stop sharing the athlete's data with one squad. Repeating a request changes nothing. */
+    setSquadConsent: (squadId: string, share: boolean) =>
+      request<SquadConsentState>('PUT', `/squads/${encodeURIComponent(squadId)}/consent`, { share }),
     me: () => request<Me>('GET', '/me'),
     /** #1 AC4: records consent to the notice version this app shows at setup. */
     giveHealthConsent: () =>
@@ -127,6 +151,8 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     /** #4 AC3, AC4: the athlete's recent sessions, newest first. The API returns 20 unless `limit` (1 to 50) is given. */
     recentSessions: (limit?: number) =>
       request<SavedSession[]>('GET', limit === undefined ? '/sessions' : `/sessions?limit=${limit}`),
+    /** #7 AC3: weekly load for the last 6 weeks and ACWR, calculated by the API from the athlete's sessions. */
+    myLoad: () => request<MyLoad>('GET', '/me/load'),
     /** #9: today's flags, each with its reason, value and threshold. */
     myFlags: () => request<CurrentFlags>('GET', '/me/flags'),
     /** #9 AC3: wellness 7-day averages against baseline for the Trends tab. */

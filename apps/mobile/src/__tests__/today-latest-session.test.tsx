@@ -38,7 +38,13 @@ describe('FR1 #4: latest session on Today (AC4)', () => {
       signOut: jest.fn(),
       getIdToken: jest.fn(),
     });
-    mockMyFlags.mockResolvedValue({ date: '2026-11-25', flags: [] });
+    mockMyFlags.mockResolvedValue({
+      date: '2026-11-25',
+      flags: [],
+      checks: { acwr: 'unavailable', wellness: 'no-baseline' },
+      baselineCheckIns: 0,
+      minCheckIns: 14,
+    });
   });
 
   it('shows the newest session with its type, duration, date, RPE and load', async () => {
