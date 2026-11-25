@@ -9,10 +9,16 @@ const coachSquad: MySquad = { squadId: 'sq-c', squadName: 'U20s', role: 'COACH',
 
 function setup(mySquads: jest.Mock, setSquadConsent: jest.Mock = jest.fn()) {
   const onOpenMembers = jest.fn();
+  const onOpenOverview = jest.fn();
   const view = renderScreen(
-    <MySquads api={{ mySquads, setSquadConsent }} refreshKey={0} onOpenMembers={onOpenMembers} />,
+    <MySquads
+      api={{ mySquads, setSquadConsent }}
+      refreshKey={0}
+      onOpenMembers={onOpenMembers}
+      onOpenOverview={onOpenOverview}
+    />,
   );
-  return { onOpenMembers, view };
+  return { onOpenMembers, onOpenOverview, view };
 }
 
 describe('FR4: My squads on Profile (#2 AC3)', () => {
@@ -36,6 +42,17 @@ describe('FR4: My squads on Profile (#2 AC3)', () => {
     expect(buttons).toHaveLength(1);
     await fireEvent.press(buttons[0]);
     expect(onOpenMembers).toHaveBeenCalledWith(coachSquad);
+  });
+
+  it('offers the squad overview only for squads where the caller is staff (#10)', async () => {
+    const mySquads = jest.fn().mockResolvedValue([athleteSquad, coachSquad]);
+    const { onOpenOverview, view } = setup(mySquads);
+    await view;
+
+    const buttons = await screen.findAllByRole('button', { name: 'Squad overview' });
+    expect(buttons).toHaveLength(1);
+    await fireEvent.press(buttons[0]);
+    expect(onOpenOverview).toHaveBeenCalledWith(coachSquad);
   });
 
   it('explains what to do when the caller is in no squads', async () => {

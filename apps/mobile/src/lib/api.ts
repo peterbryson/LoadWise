@@ -1,5 +1,13 @@
 import { HEALTH_DATA_NOTICE_VERSION } from '@loadwise/shared';
-import type { CreateSquad, LoadTotals, MyLoad, SessionLog, StaffRole, WellnessCheck } from '@loadwise/shared';
+import type {
+  CreateSquad,
+  LoadTotals,
+  MyLoad,
+  SessionLog,
+  SquadOverview,
+  StaffRole,
+  WellnessCheck,
+} from '@loadwise/shared';
 import type { Flag, FlagChecks, WellnessTrendPoint } from '@loadwise/analytics';
 
 /** An API failure with a message that is safe to show on screen. */
@@ -157,6 +165,9 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
       request<SavedSession[]>('GET', limit === undefined ? '/sessions' : `/sessions?limit=${limit}`),
     /** #7 AC3: weekly load for the last 6 weeks and ACWR, calculated by the API from the athlete's sessions. */
     myLoad: () => request<MyLoad>('GET', '/me/load'),
+    /** #10: every athlete in a squad with today's status, flags and combined load, for its staff. */
+    squadOverview: (squadId: string) =>
+      request<SquadOverview>('GET', `/squads/${encodeURIComponent(squadId)}/overview`),
     /** #8 AC2: a consenting athlete's combined weekly load and ACWR, for staff of the squad. */
     athleteLoad: (squadId: string, athleteId: string) =>
       request<LoadTotals>(
