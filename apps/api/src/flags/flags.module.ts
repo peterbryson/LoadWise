@@ -17,5 +17,7 @@ const systemClock: Clock = () => new Date();
     { provide: CLOCK, useValue: systemClock },
     { provide: FLAG_THRESHOLDS, useValue: { ...DEFAULT_FLAG_THRESHOLDS } },
   ],
+  // One threshold configuration for the athlete's flags and the squad overview (#10).
+  exports: [FLAG_THRESHOLDS],
 })
 export class FlagsModule {}

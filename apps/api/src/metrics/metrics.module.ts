@@ -6,6 +6,7 @@ import { MetricsService } from './metrics.service';
 @Module({
   controllers: [MetricsController],
   providers: [MetricsService, { provide: CLOCK, useValue: systemClock }],
-  exports: [MetricsService],
+  // CLOCK is exported so the squad overview (#10) uses the same "today" as GET /me/load.
+  exports: [MetricsService, CLOCK],
 })
 export class MetricsModule {}

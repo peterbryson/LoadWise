@@ -9,6 +9,13 @@ export const STAFF_ONLY = 'Only staff in this squad can see this';
 export const ROLE_NOT_ALLOWED = 'Your role in this squad does not include this data';
 export const NO_ATHLETE_ACCESS = 'You do not have access to this athlete’s data';
 
+/** The athletes of one squad as a staff member may list them (#10). */
+export interface SquadAthletes {
+  role: StaffRole;
+  squadName: string;
+  athletes: { id: string; displayName: string; sharing: boolean }[];
+}
+
 /**
  * #3, #11, NFR 2.2: the one place that decides whether a staff member may see an athlete's data.
  * Every check reads the database on every request, with no caching, so a withdrawn consent or a
@@ -53,6 +60,28 @@ export class StaffAccessService {
     });
     if (!sharing) throw new ForbiddenException(NO_ATHLETE_ACCESS);
     return role;
+  }
+
+  /**
+   * #10: the athletes a staff member may list for a squad overview, with whether each one currently
+   * shares data with the squad. Read from the database on every request, like assertCanView, so a
+   * withdrawal shows on the next request. Every staff role has LOAD and FLAGS (the overview's data);
+   * the check still runs so the overview fails closed if the matrix ever changes.
+   */
+  async squadAthletes(viewerId: string, squadId: string): Promise<SquadAthletes> {
+    const role = await this.requireStaff(viewerId, squadId);
+    if (!canView(role, 'LOAD') || !canView(role, 'FLAGS')) throw new ForbiddenException(ROLE_NOT_ALLOWED);
+
+    const squad = await this.prisma.squad.findUnique({ where: { id: squadId }, select: { name: true } });
+    const members = await this.prisma.membership.findMany({
+      where: { squadId, role: 'ATHLETE' },
+      select: { consentGiven: true, user: { select: { id: true, displayName: true } } },
+    });
+    return {
+      role,
+      squadName: squad?.name ?? '',
+      athletes: members.map((m) => ({ id: m.user.id, displayName: m.user.displayName, sharing: m.consentGiven })),
+    };
   }
 
   private async roleIn(userId: string, squadId: string): Promise<SquadRole> {
