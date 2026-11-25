@@ -35,6 +35,12 @@ export type SquadMember =
   | { userId: string; displayName: string; role: 'ATHLETE'; consentGiven: boolean }
   | { userId: string; displayName: string; role: StaffRole };
 
+/** The athlete's sharing state for one squad, from `PUT /squads/:squadId/consent`. */
+export interface SquadConsentState {
+  squadId: string;
+  consentGiven: boolean;
+}
+
 /** The signed-in user, from `GET /me`. */
 export interface Me {
   id: string;
@@ -84,7 +90,7 @@ async function readError(response: Response): Promise<ApiError> {
 }
 
 export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiClientOptions) {
-  async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, signedIn = true): Promise<T> {
+  async function request<T>(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown, signedIn = true): Promise<T> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (signedIn) headers.Authorization = `Bearer ${await getIdToken()}`;
 
@@ -111,6 +117,9 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     /** #2 AC3: a squad's members. 403 for athletes, 404 if the caller is not in the squad. */
     squadMembers: (squadId: string) =>
       request<SquadMember[]>('GET', `/squads/${encodeURIComponent(squadId)}/members`),
+    /** #3: start or stop sharing the athlete's data with one squad. Repeating a request changes nothing. */
+    setSquadConsent: (squadId: string, share: boolean) =>
+      request<SquadConsentState>('PUT', `/squads/${encodeURIComponent(squadId)}/consent`, { share }),
     me: () => request<Me>('GET', '/me'),
     /** #1 AC4: records consent to the notice version this app shows at setup. */
     giveHealthConsent: () =>
