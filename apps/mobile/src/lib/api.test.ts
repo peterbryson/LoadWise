@@ -181,3 +181,24 @@ describe('FR1: session calls (#4)', () => {
     expect(fetchFn).toHaveBeenCalledWith('http://api.test/sessions?limit=1', expect.objectContaining({ method: 'GET' }));
   });
 });
+
+describe('FR2: load metrics call (#7)', () => {
+  it('reads weekly load and ACWR from GET /me/load with the token', async () => {
+    const load = {
+      today: '2026-11-25',
+      weeks: [{ weekStart: '2026-11-23', load: 420, partial: true }],
+      usualWeek: null,
+      acwr: { model: 'EWMA', value: null, availableFrom: '2026-12-02' },
+      monotony: null,
+      strain: null,
+    };
+    const { client, fetchFn } = clientReturning(jsonResponse(200, load));
+
+    await expect(client.myLoad()).resolves.toEqual(load);
+    expect(fetchFn).toHaveBeenCalledWith('http://api.test/me/load', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer id-token' },
+      body: undefined,
+    });
+  });
+});

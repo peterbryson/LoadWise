@@ -1,5 +1,5 @@
 import { HEALTH_DATA_NOTICE_VERSION } from '@loadwise/shared';
-import type { CreateSquad, SessionLog, StaffRole, WellnessCheck } from '@loadwise/shared';
+import type { CreateSquad, MyLoad, SessionLog, StaffRole, WellnessCheck } from '@loadwise/shared';
 
 /** An API failure with a message that is safe to show on screen. */
 export class ApiError extends Error {
@@ -107,6 +107,8 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     /** #4 AC3, AC4: the athlete's recent sessions, newest first. The API returns 20 unless `limit` (1 to 50) is given. */
     recentSessions: (limit?: number) =>
       request<SavedSession[]>('GET', limit === undefined ? '/sessions' : `/sessions?limit=${limit}`),
+    /** #7 AC3: weekly load for the last 6 weeks and ACWR, calculated by the API from the athlete's sessions. */
+    myLoad: () => request<MyLoad>('GET', '/me/load'),
   };
 }
 
