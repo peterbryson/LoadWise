@@ -10,7 +10,8 @@ the same code runs on a phone later.
 | --- | --- |
 | Sign in, Create an account, Forgot password | **Real.** Firebase email and password sign-in (#1) |
 | First-time setup | UI only. The consent checkbox gates Continue, but consent is **not saved** yet (DL-008) |
-| Today, Trends, Flag details | **Preview.** Figma sample figures, marked with a Preview banner whose chips switch between the design's states |
+| Today, Flag details | **Preview.** Figma sample figures, marked with a Preview banner whose chips switch between the design's states |
+| Trends | Weekly load for the last 6 weeks and ACWR are **real**, from `GET /me/load` (#7). The Wellness card is still a **preview** with its own banner (#9) |
 | Wellness check, Log session | **Preview.** Forms validate with the shared Zod schemas and show session load from `@loadwise/analytics`, but **nothing is saved** (#4, #5) |
 | Profile | Your real Firebase name and email. The Squads section calls the **real API** (#2 create and join). Preview tools switch theme and reopen setup |
 

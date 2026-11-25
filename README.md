@@ -18,7 +18,7 @@ consent-based access.
 | API | NestJS with `/health`, a global auth guard, and #2 create a squad and join by invite code (no squad member list yet) |
 | Sign-in (#1) | API verifies Firebase ID tokens when `FIREBASE_PROJECT_ID` is set (checked by hand on 3 Nov with a real token). The app signs in with Firebase email and password. Setup consent is not stored yet (DL-008) |
 | Database | Data model v1 and the init migration ([`docs/design/erd.md`](docs/design/erd.md)) |
-| Analytics | Session load only |
+| Analytics | Session load, weekly load, usual week, EWMA ACWR (rolling ACWR as a swappable alternative), monotony and strain (#7, DL-007), computed on read by `GET /me/load` |
 | Mobile app | Expo app running in the browser on localhost: every Figma V1 screen in light and dark. Sign-in and squads are real; Today, Trends, flags and the logging forms are **labelled previews with sample data** (see [`apps/mobile/README.md`](apps/mobile/README.md)) |
 | Staff dashboard | Not started (Sprint 7, Should) |
 | CI | Lint, typecheck and tests on a self-hosted GitLab runner |
