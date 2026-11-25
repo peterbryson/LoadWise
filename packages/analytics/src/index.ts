@@ -17,5 +17,5 @@ export type {
   WellnessScores,
   WellnessTrendPoint,
 } from './wellness-baseline';
-export { DEFAULT_FLAG_THRESHOLDS, evaluateFlags, flagChecks } from './flags';
+export { DEFAULT_FLAG_THRESHOLDS, evaluateFlags, flagChecks, flagDisplay } from './flags';
 export type { Flag, FlagChecks, FlagInputs, FlagRule, FlagThresholds } from './flags';

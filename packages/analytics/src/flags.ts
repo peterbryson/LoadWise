@@ -61,16 +61,43 @@ function checkThresholds({ acwrHigh, wellnessSdBelow }: FlagThresholds): void {
   }
 }
 
+const MIN_DISPLAY_DECIMALS = 2;
+const MAX_DISPLAY_DECIMALS = 12;
+
+function rounded(value: number, decimals: number): string {
+  return String(Number(value.toFixed(decimals)));
+}
+
+/**
+ * The value and threshold as shown to the athlete. Fixed rounding could make a flagged value
+ * look equal to or on the wrong side of its guide (ACWR 1.504 as "1.50, above the 1.5 guide"),
+ * so this uses the fewest decimals, from 2, at which the shown numbers keep the flag's direction.
+ * ACWR keeps trailing zeros (1.60) like other ratios; wellness scores are whole numbers.
+ */
+export function flagDisplay(flag: Pick<Flag, 'rule' | 'value' | 'threshold'>): { value: string; threshold: string } {
+  const { rule, value, threshold } = flag;
+  const separated = (shownValue: string, shownThreshold: string) =>
+    rule === 'ACWR_HIGH' ? Number(shownValue) > Number(shownThreshold) : Number(shownValue) < Number(shownThreshold);
+  for (let decimals = MIN_DISPLAY_DECIMALS; decimals <= MAX_DISPLAY_DECIMALS; decimals++) {
+    const shownValue = rule === 'ACWR_HIGH' ? value.toFixed(decimals) : rounded(value, decimals);
+    const shownThreshold = rounded(threshold, decimals);
+    if (separated(shownValue, shownThreshold)) return { value: shownValue, threshold: shownThreshold };
+  }
+  // Closer than 12 decimals: the full numbers still differ, so show them as they are.
+  return { value: String(value), threshold: String(threshold) };
+}
+
 function acwrFlag(acwr: number | null, acwrHigh: number): Flag | null {
   if (acwr === null) return null;
   if (!Number.isFinite(acwr) || acwr < 0) throw new RangeError(`ACWR must be zero or more, got ${acwr}`);
   if (acwr <= acwrHigh) return null;
+  const shown = flagDisplay({ rule: 'ACWR_HIGH', value: acwr, threshold: acwrHigh });
   return {
     rule: 'ACWR_HIGH',
     metric: 'acwr',
     value: acwr,
     threshold: acwrHigh,
-    reason: `Your acute:chronic workload ratio is ${acwr.toFixed(2)}, above the ${acwrHigh} guide.`,
+    reason: `Your acute:chronic workload ratio is ${shown.value}, above the ${shown.threshold} guide.`,
   };
 }
 
@@ -88,14 +115,15 @@ function wellnessFlags(
     // "More than 1.5 SD below" is strict, so a score exactly on the threshold is not flagged.
     // With SD 0 (the same answer every day) the threshold is the mean, so any lower score flags.
     if (today[item] < threshold) {
+      const shown = flagDisplay({ rule: 'WELLNESS_LOW', value: today[item], threshold });
       flags.push({
         rule: 'WELLNESS_LOW',
         metric: item,
         value: today[item],
         threshold,
         reason:
-          `Your ${item} score today is ${today[item]}, more than ${sdBelow} SD below your usual ` +
-          `${mean.toFixed(1)} (guide: ${Number(threshold.toFixed(1))}).`,
+          `Your ${item} score today is ${shown.value}, more than ${sdBelow} SD below your usual ` +
+          `${mean.toFixed(1)} (guide: ${shown.threshold}).`,
       });
     }
   }

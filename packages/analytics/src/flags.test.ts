@@ -1,5 +1,6 @@
-import { DEFAULT_FLAG_THRESHOLDS, evaluateFlags, flagChecks } from './flags';
-import type { WellnessBaseline, WellnessScores } from './wellness-baseline';
+import { DEFAULT_FLAG_THRESHOLDS, evaluateFlags, flagChecks, flagDisplay } from './flags';
+import { wellnessBaseline } from './wellness-baseline';
+import type { WellnessBaseline, WellnessEntry, WellnessScores } from './wellness-baseline';
 
 const goodDay: WellnessScores = { sleep: 4, soreness: 4, fatigue: 4, stress: 4 };
 
@@ -149,5 +150,50 @@ describe('FR2: which flag checks could run (#9 AC1, no false all-clear)', () => 
 
   it('reports no check-in when there is a baseline but no check-in today', () => {
     expect(flagChecks({ acwr: 1.1, wellnessToday: null, baseline }).wellness).toBe('no-check-in');
+  });
+});
+
+describe('FR2: shown value and threshold never contradict the flag (#9 AC2)', () => {
+  it('shows ACWR 1.504 to enough decimals to be visibly above the 1.5 guide', () => {
+    const [flag] = evaluateFlags({ acwr: 1.504, ...noWellness });
+
+    expect(flagDisplay(flag)).toEqual({ value: '1.504', threshold: '1.5' });
+    expect(flag.reason).toBe('Your acute:chronic workload ratio is 1.504, above the 1.5 guide.');
+  });
+
+  it('keeps two decimals for ACWR when they already separate value and guide', () => {
+    expect(flagDisplay(evaluateFlags({ acwr: 1.6, ...noWellness })[0])).toEqual({ value: '1.60', threshold: '1.5' });
+  });
+
+  it('shows a 1.0477 wellness guide so that a flagged score of 1 is visibly below it', () => {
+    // 11 check-ins of sleep 2, one 3, two 4 and one 5: mean 38/15 = 2.5333, sample SD 0.9904,
+    // so the guide is 2.5333 - 1.5 x 0.9904 = 1.0477. A score of 1 is below it and is flagged.
+    const sleeps = [...Array<number>(11).fill(2), 3, 4, 4, 5];
+    const entries: WellnessEntry[] = sleeps.map((sleep, i) => ({
+      date: `2026-11-${String(i + 1).padStart(2, '0')}`,
+      sleep,
+      soreness: 4,
+      fatigue: 4,
+      stress: 4,
+    }));
+    const today = '2026-11-20';
+
+    const [flag] = evaluateFlags({ acwr: null, wellnessToday: { ...goodDay, sleep: 1 }, baseline: wellnessBaseline(entries, today) });
+
+    expect(flag.threshold).toBeCloseTo(1.0477, 4);
+    expect(flagDisplay(flag)).toEqual({ value: '1', threshold: '1.05' });
+    expect(flag.reason).toBe('Your sleep score today is 1, more than 1.5 SD below your usual 2.5 (guide: 1.05).');
+  });
+
+  it('adds decimals until a guide just above the score is visibly above it', () => {
+    const flag = { rule: 'WELLNESS_LOW', metric: 'sleep', value: 1, threshold: 1.0004, reason: '' } as const;
+
+    expect(flagDisplay(flag)).toEqual({ value: '1', threshold: '1.0004' });
+  });
+
+  it('falls back to the full numbers when they differ only beyond 12 decimals', () => {
+    const flag = { rule: 'ACWR_HIGH', metric: 'acwr', value: 1.5000000000001, threshold: 1.5, reason: '' } as const;
+
+    expect(flagDisplay(flag)).toEqual({ value: '1.5000000000001', threshold: '1.5' });
   });
 });

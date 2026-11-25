@@ -199,3 +199,23 @@ describe('FR2 #9: no flags is never shown as an all-clear when a check could not
     expect(screen.getByText('Wellness: check in today to compare')).toBeTruthy();
   });
 });
+
+describe('FR2 #9: the shown value and guide never contradict the flag (AC2)', () => {
+  it('shows ACWR 1.504 as above a 1.5 guide, not as 1.50', async () => {
+    mockMyFlags.mockResolvedValue(
+      flagsResponse([{ ...acwrFlag, value: 1.504, reason: 'Your acute:chronic workload ratio is 1.504, above the 1.5 guide.' }]),
+    );
+    await renderScreen(<FlagScreen />);
+
+    expect(await screen.findByLabelText('Load ratio (ACWR): 1.504')).toBeTruthy();
+    expect(screen.getByLabelText('Guide: flagged above: 1.5')).toBeTruthy();
+  });
+
+  it('shows a 1.0477 guide as 1.05 so a flagged score of 1 is visibly below it, not "1"', async () => {
+    mockMyFlags.mockResolvedValue(flagsResponse([{ ...sleepFlag, value: 1, threshold: 1.0477 }]));
+    await renderScreen(<FlagScreen />);
+
+    expect(await screen.findByLabelText('Sleep today: 1 of 5')).toBeTruthy();
+    expect(screen.getByLabelText('Guide: flagged below: 1.05')).toBeTruthy();
+  });
+});
