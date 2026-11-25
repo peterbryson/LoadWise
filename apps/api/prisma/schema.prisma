@@ -127,6 +127,9 @@ model Session {
   date            DateTime    @db.Date
   durationMinutes Int
   rpe             Int
+  /// #6: the idempotency key the app generates for an entry, so syncing it twice stores it once.
+  /// Null for entries saved without one. Unique on its own, so a key is never reused across athletes.
+  clientId        String?     @unique
   createdAt       DateTime    @default(now())
 
   athlete User   @relation(fields: [athleteId], references: [id], onDelete: Cascade)
@@ -144,6 +147,8 @@ model WellnessEntry {
   soreness  Int
   fatigue   Int
   stress    Int
+  /// #6: the app's idempotency key for this check-in, as on Session.
+  clientId  String?  @unique
   createdAt DateTime @default(now())
 
   athlete User @relation(fields: [athleteId], references: [id], onDelete: Cascade)

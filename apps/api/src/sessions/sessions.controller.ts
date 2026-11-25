@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Post, Query, Res } from '@nestjs/common';
 import { SessionLogSchema } from '@loadwise/shared';
 import type { SessionLog } from '@loadwise/shared';
 import { z } from 'zod';
 import type { AuthUser } from '../auth/auth.service';
 import { CurrentUser } from '../auth/current-user.decorator';
+import type { StatusSetter } from '../common/idempotent-write';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { RequiresHealthConsent } from '../consent/requires-health-consent.decorator';
 import { SavedSession, SessionsService } from './sessions.service';
@@ -19,12 +20,16 @@ export const RecentSessionsQuerySchema = z.object({
 export class SessionsController {
   constructor(private readonly sessions: SessionsService) {}
 
+  /** 201 for a new session; 200 when the clientId was already stored, as nothing new was created (#6). */
   @Post()
-  create(
+  async create(
     @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(SessionLogSchema)) body: SessionLog,
+    @Res({ passthrough: true }) response: StatusSetter,
   ): Promise<SavedSession> {
-    return this.sessions.create(user.id, body);
+    const { saved, replayed } = await this.sessions.create(user.id, body);
+    if (replayed) response.status(HttpStatus.OK);
+    return saved;
   }
 
   @Get()
