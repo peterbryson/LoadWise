@@ -1,7 +1,7 @@
 import { sessionLoad } from '@loadwise/analytics';
 import { SessionLogSchema, SessionType } from '@loadwise/shared';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -11,9 +11,10 @@ import { InlineMessage } from '@/components/InlineMessage';
 import { OptionRow } from '@/components/Option';
 import { NavHeader, Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
-import { ApiError, apiBaseUrl, createApiClient } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
+import { ApiError } from '@/lib/api';
 import { localIsoDate } from '@/lib/dates';
+import { OFFLINE_SAVED_MESSAGE } from '@/lib/offline-queue';
+import { useOfflineSync } from '@/lib/offline-sync';
 import { useTheme } from '@/theme/theme';
 
 const types = [
@@ -51,19 +52,20 @@ const rpeAnchors: Partial<Record<number, string>> = {
 
 /**
  * #4 log a session. Validates with the shared schema (AC2), then saves through the API (AC1) and
- * returns to Today. Saving offline and syncing later arrives with #6.
+ * returns to Today. With no signal the session is kept on the device and synced later (#6 AC1); a
+ * session the API refuses, such as an out-of-range value, is shown as an error and not kept.
  */
 export default function LogSessionScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const { getIdToken } = useAuth();
-  const api = useMemo(() => createApiClient({ baseUrl: apiBaseUrl, getIdToken }), [getIdToken]);
+  const { saveSession } = useOfflineSync();
   const [type, setType] = useState<SessionType>('TRAINING');
   const [duration, setDuration] = useState<string | undefined>();
   const [otherMinutes, setOtherMinutes] = useState('');
   const [rpe, setRpe] = useState<number | undefined>();
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [queued, setQueued] = useState(false);
 
   const minutes = duration === 'other' ? Number(otherMinutes) : Number(duration);
   const parsed = SessionLogSchema.safeParse({
@@ -82,7 +84,12 @@ export default function LogSessionScreen() {
     setError(null);
     setSaving(true);
     try {
-      await api.logSession(parsed.data);
+      const outcome = await saveSession(parsed.data);
+      if (outcome.status === 'queued') {
+        setQueued(true);
+        setSaving(false);
+        return;
+      }
       router.back();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.');
@@ -174,7 +181,14 @@ export default function LogSessionScreen() {
         </Card>
       ) : null}
 
-      <Button label="Save session" onPress={save} loading={saving} />
+      {queued ? (
+        <>
+          <InlineMessage kind="info" text={OFFLINE_SAVED_MESSAGE} />
+          <Button label="Back to Today" onPress={() => router.back()} />
+        </>
+      ) : (
+        <Button label="Save session" onPress={save} loading={saving} />
+      )}
     </Screen>
   );
 }
