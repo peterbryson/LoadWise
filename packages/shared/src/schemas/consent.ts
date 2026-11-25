@@ -18,3 +18,13 @@ export const GiveHealthConsentSchema = z.object({
 });
 
 export type GiveHealthConsent = z.infer<typeof GiveHealthConsentSchema>;
+
+/**
+ * #3: an athlete turns sharing with one squad on or off. Strictly a boolean, so a string such as
+ * "false" is rejected rather than read as true.
+ */
+export const SetSquadConsentSchema = z.object({
+  share: z.boolean(),
+});
+
+export type SetSquadConsent = z.infer<typeof SetSquadConsentSchema>;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, StyleSheet, Switch, View } from 'react-native';
 import { ApiClient, ApiError, MySquad } from '@/lib/api';
 import { roleLabels } from '@/lib/roles';
 import { useTheme } from '@/theme/theme';
@@ -13,14 +13,23 @@ type State =
   | { kind: 'error'; message: string }
   | { kind: 'loaded'; squads: MySquad[] };
 
+type AthleteSquad = Extract<MySquad, { role: 'ATHLETE' }>;
+
 interface MySquadsProps {
-  api: Pick<ApiClient, 'mySquads'>;
+  api: Pick<ApiClient, 'mySquads' | 'setSquadConsent'>;
   /** Changing this reloads the list, e.g. after creating or joining a squad. */
   refreshKey: number;
   onOpenMembers: (squad: MySquad) => void;
 }
 
-/** #2 AC3: the squads the signed-in user belongs to, with their role in each. */
+function errorText(error: unknown): string {
+  return error instanceof ApiError ? error.message : 'Something went wrong. Try again.';
+}
+
+/**
+ * #2 AC3 and #3: the squads the signed-in user belongs to, with their role in each. For athlete
+ * memberships it holds the per-squad "Share my data" switch.
+ */
 export function MySquads({ api, refreshKey, onOpenMembers }: MySquadsProps) {
   const { colors } = useTheme();
   const [state, setState] = useState<State>({ kind: 'loading' });
@@ -35,14 +44,25 @@ export function MySquads({ api, refreshKey, onOpenMembers }: MySquadsProps) {
         if (!cancelled) setState({ kind: 'loaded', squads });
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
-        const message = error instanceof ApiError ? error.message : 'Something went wrong. Try again.';
-        setState({ kind: 'error', message });
+        if (!cancelled) setState({ kind: 'error', message: errorText(error) });
       });
     return () => {
       cancelled = true;
     };
   }, [api, refreshKey, attempt]);
+
+  function sharingChanged(squadId: string, consentGiven: boolean) {
+    setState((current) =>
+      current.kind === 'loaded'
+        ? {
+            kind: 'loaded',
+            squads: current.squads.map((squad) =>
+              squad.squadId === squadId && squad.role === 'ATHLETE' ? { ...squad, consentGiven } : squad,
+            ),
+          }
+        : current,
+    );
+  }
 
   return (
     <Card gap={10}>
@@ -72,9 +92,7 @@ export function MySquads({ api, refreshKey, onOpenMembers }: MySquadsProps) {
             <Card key={squad.squadId} tone="raised" gap={6}>
               <AppText variant="heading">{squad.squadName}</AppText>
               {squad.role === 'ATHLETE' ? (
-                <AppText variant="caption" color="textMuted">
-                  {`Athlete · ${squad.consentGiven ? 'Sharing your data' : 'Not sharing your data'}`}
-                </AppText>
+                <SquadSharing api={api} squad={squad} onChanged={sharingChanged} />
               ) : (
                 <>
                   <AppText variant="caption" color="textMuted">
@@ -94,3 +112,85 @@ export function MySquads({ api, refreshKey, onOpenMembers }: MySquadsProps) {
     </Card>
   );
 }
+
+interface SquadSharingProps {
+  api: Pick<ApiClient, 'setSquadConsent'>;
+  squad: AthleteSquad;
+  onChanged: (squadId: string, consentGiven: boolean) => void;
+}
+
+/**
+ * #3: one switch per squad. Turning sharing on saves straight away; turning it off asks first,
+ * because staff lose access on their next request.
+ */
+function SquadSharing({ api, squad, onChanged }: SquadSharingProps) {
+  const { colors } = useTheme();
+  const [confirmingStop, setConfirmingStop] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save(share: boolean) {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await api.setSquadConsent(squad.squadId, share);
+      onChanged(squad.squadId, result.consentGiven);
+      setConfirmingStop(false);
+    } catch (caught) {
+      setError(errorText(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function onSwitch(value: boolean) {
+    if (value) void save(true);
+    else setConfirmingStop(true);
+  }
+
+  return (
+    <>
+      <View style={styles.switchRow}>
+        <AppText variant="body" style={styles.flex}>
+          Share my data with this squad
+        </AppText>
+        <Switch
+          value={squad.consentGiven}
+          onValueChange={onSwitch}
+          disabled={busy || confirmingStop}
+          accessibilityLabel={`Share my data with ${squad.squadName}`}
+          accessibilityState={{ checked: squad.consentGiven, disabled: busy || confirmingStop }}
+          trackColor={{ true: colors.accent, false: colors.border }}
+        />
+      </View>
+      <AppText variant="caption" color="textMuted">
+        {squad.consentGiven
+          ? 'Staff in this squad can see your data, limited to what their role needs. You can stop at any time.'
+          : 'Staff in this squad see none of your data until you turn this on. Your logging is not affected.'}
+      </AppText>
+
+      {confirmingStop ? (
+        <View style={styles.confirm} accessibilityLiveRegion="polite">
+          <AppText variant="label">
+            {`Stop sharing with ${squad.squadName}? Its staff lose access to your data straight away.`}
+          </AppText>
+          <Button label="Stop sharing" variant="danger" loading={busy} onPress={() => void save(false)} />
+          <Button
+            label="Keep sharing"
+            variant="secondary"
+            disabled={busy}
+            onPress={() => setConfirmingStop(false)}
+          />
+        </View>
+      ) : null}
+
+      {error ? <InlineMessage kind="error" text={error} /> : null}
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 },
+  flex: { flex: 1 },
+  confirm: { gap: 8 },
+});
