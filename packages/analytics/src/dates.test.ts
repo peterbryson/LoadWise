@@ -42,3 +42,25 @@ describe('FR2: calendar-day helpers for load metrics (#7)', () => {
     expect(() => addDays('2026-11-25', days)).toThrow(RangeError);
   });
 });
+
+describe('NFR3: remembered date conversions never change a result (#10)', () => {
+  it('gives the same answers on repeated calls', () => {
+    const first = [addDays('2026-11-25', -28), mondayOf('2026-11-25'), daysBetween('2026-10-28', '2026-11-25')];
+    const again = [addDays('2026-11-25', -28), mondayOf('2026-11-25'), daysBetween('2026-10-28', '2026-11-25')];
+    expect(again).toEqual(first);
+    expect(first).toEqual(['2026-10-28', '2026-11-23', 28]);
+  });
+
+  it('still rejects an impossible date every time, after valid dates have been remembered', () => {
+    addDays('2026-02-28', 1);
+    expect(() => addDays('2026-02-30', 0)).toThrow(RangeError);
+    expect(() => addDays('2026-02-30', 0)).toThrow(RangeError);
+  });
+
+  it('stays correct after more distinct dates than it keeps', () => {
+    // Each day is converted both ways, so both remembered conversions overflow and are cleared.
+    for (let i = 0; i < 25_000; i++) expect(daysBetween('2000-01-01', addDays('2000-01-01', i))).toBe(i);
+    expect(addDays('2026-11-25', 1)).toBe('2026-11-26');
+    expect(daysBetween('2000-01-01', '2026-11-25')).toBe(9825);
+  });
+});
