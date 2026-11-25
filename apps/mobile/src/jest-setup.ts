@@ -19,3 +19,11 @@ const usedComponents = [
 ] as const;
 
 for (const name of usedComponents) void ReactNative[name];
+
+// The first native view to render (Switch, expo-image's Image) makes react-native's renderer load
+// its private interface, about 50 more modules, in the same lazy way. Reading each of its getters
+// loads them now. If a react-native upgrade moves this file, every suite fails here, not at random.
+const rendererInterface = jest.requireActual<Record<string, unknown>>(
+  'react-native/Libraries/ReactPrivate/ReactNativePrivateInterface',
+);
+for (const name of Object.keys(rendererInterface)) void rendererInterface[name];
