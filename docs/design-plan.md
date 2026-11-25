@@ -3,7 +3,11 @@
 > CSC3032 Software Engineering Project · Peter Bryson (40405392)
 > Last updated: 4 Nov 2026 · Source of truth for weekly delivery. Update it at every sprint review.
 
-There are 25 working weeks from 26 Oct to the **19 Apr 2027** submission. Each week lists what ships, what gets set up and which dissertation section gets written, so every rubric line has evidence by April. Work follows two-week Scrum sprints. Tick items off, and move anything that slips into the next week with a note in the sprint review.
+There are 25 working weeks from 26 Oct to the **19 Apr 2027** submission. Each week lists what ships, what gets set up and which dissertation section gets written, so every rubric line has evidence by April. Work followed two-week Scrum sprints up to Sprint 2 (ended 20 Nov).
+
+> **25 Nov 2026: moved to Kanban-style continuous flow (DL-016).** From Sprint 3 onwards, the week and sprint dates below are a guide to order and capacity, not commitments. Stories are built in the priority order in DL-016 and merged one at a time after review. The fixed deadlines in section 1 still apply, and the MVP (#1 to #11 on staging) must be ready for the interim video on 18 Jan 2027.
+
+Tick items off as they merge.
 
 ---
 

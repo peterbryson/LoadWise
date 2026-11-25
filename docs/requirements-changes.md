@@ -5,6 +5,7 @@ Source for dissertation Ch3 (requirements evolution) and Ch1 (project progressio
 
 | Date | Story / Req | Change | Reason (source: interview, spike, supervisor, velocity) |
 | --- | --- | --- | --- |
+| 25 Nov 2026 | Sprint 3 (#2, #3, #6, #7, #8, #9, #10, #11, tasks #35, #40, #41, #43, #44) | Sprint dates and per-story dates removed. The same stories stay Must and are built in priority order (#7, #9, #2, #3, #11, #6, #8, #10) under continuous flow, with the MVP due for the interim video on 18 Jan 2027. Fallbacks unchanged. No scope change. | Peter's decision, 25 Nov: sprint commitments did not fit irregular capacity (DL-016) |
 | 20 Nov 2026 | #41 book interviews | Moved from Sprint 2 to Sprint 3. | Peter's decision, 20 Nov: ethics approval only came on 20 Nov, two days before the sprint end |
 | 20 Nov 2026 | #6 offline sync, #35 spike, #40 Ch5 notes | Moved from Sprint 2 to Sprint 3. Still Must. | #6 depends on the spike (#35), and the spike needed #4 and #5 writing through the API first, which only happened on 20 Nov. #40 records #6's design, so it moves with it. Recommended by Claude Code with Peter's go-ahead, 20 Nov |
 | 20 Nov 2026 | #4 log a session, #6 | #4 closed. AC4's "including any still waiting to sync" moved to #6 as its AC4: the Latest session card and Recent sessions show synced sessions now (!12, !14), and sessions waiting to sync can only be shown once offline sync exists. | The remaining criterion depends on #6 (Sprint 3), not on #4's own work. Peter's decision, 20 Nov |
