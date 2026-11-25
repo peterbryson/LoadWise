@@ -1,8 +1,26 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { CreateSquad, StaffRole } from '@loadwise/shared';
 import { isUniqueViolation } from '../common/prisma-errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateInviteCode } from './invite-code';
+
+/**
+ * One of the caller's squads, from GET /squads. Athletes see whether they share data with it;
+ * only staff see its invite code.
+ */
+export type MySquad =
+  | { squadId: string; squadName: string; role: 'ATHLETE'; consentGiven: boolean }
+  | { squadId: string; squadName: string; role: StaffRole; inviteCode: string };
+
+/** A member of a squad, from GET /squads/:squadId/members. Never includes health data or email. */
+export type SquadMember =
+  | { userId: string; displayName: string; role: 'ATHLETE'; consentGiven: boolean }
+  | { userId: string; displayName: string; role: StaffRole };
 
 export interface CreatedSquad {
   id: string;
@@ -62,5 +80,50 @@ export class SquadsService {
     }
 
     return { squadId: squad.id, squadName: squad.name, role: 'ATHLETE' };
+  }
+
+  /** #2 AC3: every squad the caller belongs to, in the order they joined. */
+  async listMine(userId: string): Promise<MySquad[]> {
+    const memberships = await this.prisma.membership.findMany({
+      where: { userId },
+      orderBy: { joinedAt: 'asc' },
+      select: {
+        role: true,
+        consentGiven: true,
+        squad: { select: { id: true, name: true, inviteCode: true } },
+      },
+    });
+    return memberships.map(({ role, consentGiven, squad }) =>
+      role === 'ATHLETE'
+        ? { squadId: squad.id, squadName: squad.name, role, consentGiven }
+        : { squadId: squad.id, squadName: squad.name, role, inviteCode: squad.inviteCode },
+    );
+  }
+
+  /**
+   * #2 AC3: the members of a squad, for its staff only. A non-member gets 404 rather than 403 so
+   * the response does not confirm that a squad id exists. Athletes in the squad get 403: they know
+   * the squad exists, but not who else is in it.
+   */
+  async listMembers(viewerId: string, squadId: string): Promise<SquadMember[]> {
+    const viewer = await this.prisma.membership.findUnique({
+      where: { userId_squadId: { userId: viewerId, squadId } },
+      select: { role: true },
+    });
+    if (!viewer) throw new NotFoundException('Squad not found');
+    if (viewer.role === 'ATHLETE') {
+      throw new ForbiddenException('Only staff in this squad can see its members');
+    }
+
+    const members = await this.prisma.membership.findMany({
+      where: { squadId },
+      orderBy: { joinedAt: 'asc' },
+      select: { role: true, consentGiven: true, user: { select: { id: true, displayName: true } } },
+    });
+    return members.map(({ role, consentGiven, user }) =>
+      role === 'ATHLETE'
+        ? { userId: user.id, displayName: user.displayName, role, consentGiven }
+        : { userId: user.id, displayName: user.displayName, role },
+    );
   }
 }

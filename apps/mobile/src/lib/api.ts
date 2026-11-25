@@ -25,6 +25,16 @@ export interface JoinedSquad {
   role: 'ATHLETE';
 }
 
+/** One of the caller's squads, from `GET /squads`. Only staff get the invite code. */
+export type MySquad =
+  | { squadId: string; squadName: string; role: 'ATHLETE'; consentGiven: boolean }
+  | { squadId: string; squadName: string; role: StaffRole; inviteCode: string };
+
+/** A squad member, from `GET /squads/:squadId/members` (staff only). No health data. */
+export type SquadMember =
+  | { userId: string; displayName: string; role: 'ATHLETE'; consentGiven: boolean }
+  | { userId: string; displayName: string; role: StaffRole };
+
 /** The signed-in user, from `GET /me`. */
 export interface Me {
   id: string;
@@ -96,6 +106,11 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     health: () => request<{ status: string }>('GET', '/health', undefined, false),
     createSquad: (input: CreateSquad) => request<CreatedSquad>('POST', '/squads', input),
     joinSquad: (inviteCode: string) => request<JoinedSquad>('POST', '/squads/join', { inviteCode }),
+    /** #2 AC3: every squad the signed-in user belongs to. */
+    mySquads: () => request<MySquad[]>('GET', '/squads'),
+    /** #2 AC3: a squad's members. 403 for athletes, 404 if the caller is not in the squad. */
+    squadMembers: (squadId: string) =>
+      request<SquadMember[]>('GET', `/squads/${encodeURIComponent(squadId)}/members`),
     me: () => request<Me>('GET', '/me'),
     /** #1 AC4: records consent to the notice version this app shows at setup. */
     giveHealthConsent: () =>
