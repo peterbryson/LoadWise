@@ -9,6 +9,7 @@ import { MetricsModule } from './metrics/metrics.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { SquadAthletesModule } from './squad-athletes/squad-athletes.module';
+import { SquadOverviewModule } from './squad-overview/squad-overview.module';
 import { SquadsModule } from './squads/squads.module';
 import { WellnessModule } from './wellness/wellness.module';
 
@@ -28,6 +29,7 @@ import { WellnessModule } from './wellness/wellness.module';
     SessionsModule,
     MetricsModule,
     FlagsModule,
+    SquadOverviewModule,
   ],
   // APP_FILTER applies the filter to every route, so all errors share one shape (#27).
   providers: [{ provide: APP_FILTER, useClass: HttpExceptionFilter }],

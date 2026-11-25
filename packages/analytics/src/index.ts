@@ -25,5 +25,7 @@ export type {
   WellnessScores,
   WellnessTrendPoint,
 } from './wellness-baseline';
+export { athleteStatus, compareOverviewRows, staffFlagReason } from './squad-overview';
+export type { AthleteStatus, OverviewRowKey, StaffReasonOptions } from './squad-overview';
 export { DEFAULT_FLAG_THRESHOLDS, evaluateFlags, flagChecks, flagDisplay } from './flags';
 export type { Flag, FlagChecks, FlagInputs, FlagRule, FlagThresholds } from './flags';

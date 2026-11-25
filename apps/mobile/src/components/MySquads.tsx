@@ -21,6 +21,8 @@ interface MySquadsProps {
   /** Changing this reloads the list, e.g. after creating or joining a squad. */
   refreshKey: number;
   onOpenMembers: (squad: MySquad) => void;
+  /** #10: staff open the squad overview of athletes' status and flags. */
+  onOpenOverview: (squad: MySquad) => void;
 }
 
 function errorText(error: unknown): string {
@@ -31,7 +33,7 @@ function errorText(error: unknown): string {
  * #2 AC3 and #3: the squads the signed-in user belongs to, with their role in each. For athlete
  * memberships it holds the per-squad "Share my data" switch.
  */
-export function MySquads({ api, refreshKey, onOpenMembers }: MySquadsProps) {
+export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview }: MySquadsProps) {
   const { colors } = useTheme();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
@@ -99,6 +101,11 @@ export function MySquads({ api, refreshKey, onOpenMembers }: MySquadsProps) {
                   <AppText variant="caption" color="textMuted">
                     {`${roleLabels[squad.role]} · Invite code ${squad.inviteCode}`}
                   </AppText>
+                  <Button
+                    label="Squad overview"
+                    accessibilityHint={`Shows each athlete's status and flags in ${squad.squadName}`}
+                    onPress={() => onOpenOverview(squad)}
+                  />
                   <Button
                     label="View members"
                     variant="secondary"

@@ -219,6 +219,18 @@ describe('FR2: load metrics call (#7)', () => {
   });
 });
 
+describe('FR4: squad overview call (#10)', () => {
+  it('reads the overview for one squad, encoding its id in the path', async () => {
+    const { client, fetchFn } = clientReturning(jsonResponse(200, {}));
+
+    await client.squadOverview('sq/1');
+    expect(fetchFn).toHaveBeenCalledWith(
+      'http://api.test/squads/sq%2F1/overview',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+});
+
 describe('FR2: combined load call for staff (#8 AC2)', () => {
   it('reads one athlete’s load in one squad, encoding both ids in the path', async () => {
     const { client, fetchFn } = clientReturning(jsonResponse(200, {}));

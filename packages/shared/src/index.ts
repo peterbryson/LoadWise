@@ -6,3 +6,4 @@ export * from './schemas/session';
 export * from './schemas/squad';
 export * from './schemas/wellness';
 export * from './schemas/load';
+export * from './schemas/overview';

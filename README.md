@@ -15,13 +15,13 @@ consent-based access.
 
 | Area | State |
 | --- | --- |
-| MVP stories | 9 of 11 merged (25 Nov): #1 sign-in, #2 squads, #3 consent, #4 sessions, #5 wellness, #6 offline sync, #7 load metrics, #9 flags, #11 role-based access. Still to build: #8 combined load, #10 squad overview |
+| MVP stories | All 11 built (25 Nov): #1 sign-in, #2 squads, #3 consent, #4 sessions, #5 wellness, #6 offline sync, #7 load metrics, #8 combined load, #9 flags, #10 squad overview, #11 role-based access. Not yet deployed to staging (I-19) |
 | API | NestJS with `/health` and a global auth guard. `GET /me`, `POST /me/health-consent`, `POST`/`GET /sessions` and `POST /wellness` (idempotent by `clientId`), `GET /me/load`, `GET /me/flags`, `GET /me/wellness-trend`, squads (create, join, list, members), `PUT /squads/:squadId/consent`, and role-based staff access to one athlete's wellness and injuries (DL-022) |
 | Sign-in (#1) | Firebase email and password in the app; the API verifies Firebase ID tokens. Health-data consent is recorded at setup and required for every health-data route (DL-008) |
 | Database | PostgreSQL with three migrations (init, health-data consent, offline-sync `clientId`) ([`docs/design/erd.md`](docs/design/erd.md)) |
 | Analytics | Session load, weekly load, usual week, EWMA ACWR (rolling ACWR as a swappable alternative, DL-018), monotony, strain, wellness baselines and flag rules (DL-007, DL-020). Calculated on each request, never stored (DL-019) |
 | Mobile app | Expo app on localhost (web). Real: sign-in, setup consent, wellness check, session logging with an offline queue, Recent sessions, the Latest session card and flags on Today, Trends (weekly load, ACWR, wellness trend), the flag screen, My squads with per-squad sharing, and the squad members list. Today's load figures are still sample data (I-23) |
-| Staff dashboard | Not started (#10 squad overview is next; the web dashboard is a later Should) |
+| Staff views | In the mobile app: squad overview (#10), squad members, and an athlete's combined load (#8). The separate web dashboard is a later Should |
 | CI | Lint, typecheck and tests on a self-hosted GitLab runner on the laptop. The API image builds only when an image input changes. Tests can time out when the laptop is busy (I-18) |
 | Staging | Azure Container Apps, Norway East (DL-014). Still runs the 20 Nov build; the 25 Nov work, including a migration, is not deployed yet (I-19) |
 | Tests | 659 passing on `main` on 25 Nov (pipeline 8167: 133 analytics, 344 API, 182 mobile). API tests fake the database; real PostgreSQL integration tests are still to do (I-2) |
@@ -122,6 +122,7 @@ the same commit as any dependency change.
 | `pnpm typecheck` | TypeScript checks across every workspace |
 | `pnpm build` | Production builds |
 | `pnpm --filter @loadwise/analytics test` | Run one workspace's tasks |
+| `pnpm --filter @loadwise/api perf:overview` | NFR 3.1: times the squad overview for 40 synthetic athletes with a full season, against the local database (`docker compose up -d db`, migrations applied). Opt-in, not part of `pnpm test` or CI; removes its own data afterwards |
 
 Check it works: `curl http://localhost:3000/health` should return `{"status":"ok", ...}`, and
 http://localhost:8081 should show the sign-in screen. Every other API route needs a Firebase ID token.

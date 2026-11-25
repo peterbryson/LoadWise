@@ -82,6 +82,12 @@ export default function ProfileScreen() {
             params: { squadId: squad.squadId, squadName: squad.squadName },
           })
         }
+        onOpenOverview={(squad) =>
+          router.push({
+            pathname: '/squad-overview',
+            params: { squadId: squad.squadId, squadName: squad.squadName },
+          })
+        }
       />
 
       <SquadTools api={api} onChanged={() => setSquadsVersion((n) => n + 1)} />
