@@ -1,4 +1,4 @@
-import type { MyLoad } from '@loadwise/shared';
+import type { LoadTotals, MyLoad } from '@loadwise/shared';
 import { ACWR_MIN_DAYS, daysBetween } from '@loadwise/analytics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -104,7 +104,11 @@ function errorMessage(error: unknown): string {
   return error instanceof ApiError ? error.message : 'Something went wrong. Try again.';
 }
 
-function WeeklyLoadCard({ load }: { load: MyLoad }) {
+/** Whose load a card describes: the athlete's own (Trends) or an athlete's, seen by staff (#8). */
+export type Whose = 'your' | 'their';
+
+/** Weekly load bars. Shared by Trends (#7) and the staff view of an athlete's combined load (#8). */
+export function WeeklyLoadCard({ load }: { load: LoadTotals }) {
   const { colors } = useTheme();
   const highest = Math.max(...load.weeks.map((week) => week.load));
   const summary = [
@@ -144,13 +148,14 @@ function WeeklyLoadCard({ load }: { load: MyLoad }) {
 }
 
 interface AcwrCardProps {
-  acwr: MyLoad['acwr'];
+  acwr: LoadTotals['acwr'];
   today: string;
   /** Known, because the athlete has logged at least one session. */
   availableFrom: string;
+  whose?: Whose;
 }
 
-function AcwrCard({ acwr, today, availableFrom }: AcwrCardProps) {
+export function AcwrCard({ acwr, today, availableFrom, whose = 'your' }: AcwrCardProps) {
   const daysToGo = daysBetween(today, availableFrom);
 
   if (acwr.value === null && daysToGo > 0) {
@@ -159,7 +164,7 @@ function AcwrCard({ acwr, today, availableFrom }: AcwrCardProps) {
       <Card tone="accent">
         <AppText variant="heading">Load ratio (ACWR)</AppText>
         <AppText variant="body" color="textMuted">
-          {`Available from ${longDay(availableFrom)}, once LoadWise has ${ACWR_MIN_DAYS} days of your data.`}
+          {`Available from ${longDay(availableFrom)}, once LoadWise has ${ACWR_MIN_DAYS} days of ${whose} data.`}
         </AppText>
         <ProgressBar
           fraction={daysSoFar / ACWR_MIN_DAYS}
@@ -178,23 +183,23 @@ function AcwrCard({ acwr, today, availableFrom }: AcwrCardProps) {
         <AppText variant="heading">Load ratio (ACWR)</AppText>
         {acwr.value === null ? null : <AppText variant="heading">{acwr.value.toFixed(2)}</AppText>}
       </View>
-      <AppText variant="body">{acwrSentence(acwr.value)}</AppText>
+      <AppText variant="body">{acwrSentence(acwr.value, whose)}</AppText>
       <AppText variant="caption" color="textMuted">
-        Compares your last 7 days of load with your last 28 days, weighting recent days more. 1.00 means
-        about the same.
+        {`Compares ${whose} last 7 days of load with ${whose} last 28 days, weighting recent days more. 1.00 means about the same.`}
       </AppText>
     </Card>
   );
 }
 
 /** Plain-language reading of the ratio against 1 only; flag thresholds belong to the engine (#9). */
-function acwrSentence(value: number | null): string {
+function acwrSentence(value: number | null, whose: Whose): string {
   if (value === null) return 'No load in the last 28 days to compare with.';
+  const subject = whose === 'your' ? 'Your' : 'Their';
   const rounded = value.toFixed(2);
-  if (rounded === '1.00') return 'Your recent load is about the same as your longer-term load.';
+  if (rounded === '1.00') return `${subject} recent load is about the same as ${whose} longer-term load.`;
   return Number(rounded) > 1
-    ? 'Your recent load is higher than your longer-term load.'
-    : 'Your recent load is lower than your longer-term load.';
+    ? `${subject} recent load is higher than ${whose} longer-term load.`
+    : `${subject} recent load is lower than ${whose} longer-term load.`;
 }
 
 function barHeight(load: number, highest: number): number {

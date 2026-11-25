@@ -44,6 +44,7 @@ function Navigator() {
         <Stack.Screen name="log-session" options={{ presentation: 'modal' }} />
         <Stack.Screen name="sessions" />
         <Stack.Screen name="squad-members" />
+        <Stack.Screen name="squad-athlete-load" />
         <Stack.Screen name="flag" />
       </Stack>
     </>
