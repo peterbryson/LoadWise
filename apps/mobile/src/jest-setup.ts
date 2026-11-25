@@ -11,6 +11,7 @@ const usedComponents = [
   'Pressable',
   'ScrollView',
   'StyleSheet',
+  'Switch',
   'Text',
   'TextInput',
   'View',
