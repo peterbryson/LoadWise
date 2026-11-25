@@ -129,7 +129,7 @@ describe('FR2/DL-006: flag wording is decision support, never diagnostic', () =>
     const flags = evaluateFlags({ acwr: 2, wellnessToday: { sleep: 1, soreness: 1, fatigue: 1, stress: 1 }, baseline });
 
     for (const flag of flags) {
-      expect(flag.reason).not.toMatch(/injur|risk|diagnos|rest|reduce|return to play/i);
+      expect(flag.reason).not.toMatch(/injur|risk|diagnos|rest|reduce|return to play|next few sessions|feel fine/i);
     }
   });
 });

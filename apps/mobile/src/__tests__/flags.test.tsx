@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 import type { Flag, FlagChecks } from '@loadwise/analytics';
 import { ApiError } from '@/lib/api';
+import { flagMeaning } from '@/lib/flag-format';
 import type { CurrentFlags } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { renderScreen } from '@/test-utils';
@@ -42,6 +43,9 @@ const sleepFlag: Flag = {
   threshold: 2.5,
   reason: 'Your sleep score today is 2, more than 1.5 SD below your usual 4.0 (guide: 2.5).',
 };
+
+/** DL-006: wording that would diagnose, predict injury or advise on load or sessions. */
+const ADVICE_WORDING = /injur|risk|diagnos|\brest\b|reduce|return to play|next few sessions|feel fine/i;
 
 const allChecked: FlagChecks = { acwr: 'checked', wellness: 'checked' };
 
@@ -138,6 +142,38 @@ describe('FR2 #9: flag detail shows reason, value and threshold (AC2)', () => {
     const text = screen.getAllByText(/./).map((node) => String(node.props.children)).join(' ');
     expect(text).not.toMatch(/injury risk|diagnos|reduce your load|rest day|return to play/i);
     expect(screen.getByText(/For pain or injury, speak to a physio or GP/)).toBeTruthy();
+  });
+
+  it.each([
+    ['the flag screen with flags', () => <FlagScreen />, [acwrFlag, sleepFlag]],
+    ['the flag screen with no flags', () => <FlagScreen />, []],
+    ['Today with flags', () => <TodayScreen />, [acwrFlag, sleepFlag]],
+  ])('DL-006: %s has no advice, prediction or diagnosis wording', async (_name, ui, flags) => {
+    mockMyFlags.mockResolvedValue(flagsResponse(flags as Flag[]));
+    await renderScreen(ui());
+    await screen.findAllByText(/flagged|lower than usual|increased/);
+
+    // The physio or GP referral is the one place pain or injury is meant to be mentioned.
+    const referral = 'This is training guidance, not a medical assessment. For pain or injury, speak to a physio or GP.';
+    const text = screen
+      .getAllByText(/./)
+      .map((node) => String(node.props.children))
+      .filter((line) => line !== referral)
+      .join(' ');
+    expect(text).not.toMatch(ADVICE_WORDING);
+  });
+
+  it('DL-006: every flag meaning is a plain description, not advice', () => {
+    for (const flag of [acwrFlag, sleepFlag]) {
+      expect(flagMeaning(flag)).not.toMatch(ADVICE_WORDING);
+    }
+  });
+
+  it('suggests sharing the flag with coach or support staff, not changing sessions', async () => {
+    mockMyFlags.mockResolvedValue(flagsResponse([acwrFlag]));
+    await renderScreen(<FlagScreen />);
+
+    expect(await screen.findByText('You can share this with your coach or support staff.')).toBeTruthy();
   });
 
   it('has an empty state when nothing is flagged', async () => {

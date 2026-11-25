@@ -59,9 +59,9 @@ export default function FlagScreen() {
 
       {state.kind === 'loaded' && state.data.flags.length > 0 ? (
         <Card gap={6}>
-          <AppText variant="heading">What you can do</AppText>
+          <AppText variant="heading">Sharing this</AppText>
           <AppText variant="body" color="textMuted">
-            Talk through your next few sessions with your coach.
+            You can share this with your coach or support staff.
           </AppText>
         </Card>
       ) : null}

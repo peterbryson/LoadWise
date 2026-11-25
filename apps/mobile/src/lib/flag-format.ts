@@ -40,7 +40,7 @@ export function flagNumbers(flag: Flag): { label: string; value: string }[] {
 
 export function flagMeaning(flag: Flag): string {
   if (flag.rule === 'ACWR_HIGH') {
-    return 'Your training load over the last 7 days is high compared with the last 28 days. A sudden rise is worth reviewing, even if you feel fine.';
+    return 'The load ratio compares your training load over the last 7 days with your load over the last 28 days. Today it is above the guide.';
   }
   return 'Today’s answer is well below your usual answers over the last 28 days. One low score can have many causes.';
 }
