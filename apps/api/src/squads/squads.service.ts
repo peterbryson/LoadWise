@@ -1,10 +1,6 @@
-import {
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { CreateSquad, StaffRole } from '@loadwise/shared';
+import { StaffAccessService } from '../access/staff-access.service';
 import { isUniqueViolation } from '../common/prisma-errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateInviteCode } from './invite-code';
@@ -40,7 +36,10 @@ const MAX_INVITE_CODE_ATTEMPTS = 3;
 
 @Injectable()
 export class SquadsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly access: StaffAccessService,
+  ) {}
 
   /** #2: creates a squad and makes the creator a member with their chosen staff role. */
   async create(userId: string, input: CreateSquad): Promise<CreatedSquad> {
@@ -106,14 +105,7 @@ export class SquadsService {
    * the squad exists, but not who else is in it.
    */
   async listMembers(viewerId: string, squadId: string): Promise<SquadMember[]> {
-    const viewer = await this.prisma.membership.findUnique({
-      where: { userId_squadId: { userId: viewerId, squadId } },
-      select: { role: true },
-    });
-    if (!viewer) throw new NotFoundException('Squad not found');
-    if (viewer.role === 'ATHLETE') {
-      throw new ForbiddenException('Only staff in this squad can see its members');
-    }
+    await this.access.requireStaff(viewerId, squadId);
 
     const members = await this.prisma.membership.findMany({
       where: { squadId },

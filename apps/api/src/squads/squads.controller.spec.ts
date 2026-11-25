@@ -375,7 +375,7 @@ describe('squads API', () => {
         .get(`/squads/${SQUAD.id}/members`)
         .set(asAthlete)
         .expect(403);
-      expect(res.body.message).toBe('Only staff in this squad can see its members');
+      expect(res.body.message).toBe('Only staff in this squad can see this');
       expect(prisma.membership.findMany).not.toHaveBeenCalled();
     });
 
