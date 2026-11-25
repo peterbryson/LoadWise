@@ -107,6 +107,52 @@ describe('FR2 #9 AC3: wellness 7-day averages against baseline on Trends', () =>
     expect(await screen.findByText('No check-ins in the last 7 days.')).toBeTruthy();
   });
 
+  it('shows every week, oldest first, against the usual for that week (AC3)', async () => {
+    const earlier = { count: 4, items: { sleep: 3.5, soreness: 3, fatigue: 2.75, stress: 4 } };
+    mockMyWellnessTrend.mockResolvedValue({
+      date: '2026-11-25',
+      baselineCheckIns: 20,
+      minCheckIns: 14,
+      weeks: [
+        { endDate: '2026-11-11', average: earlier, baseline: null },
+        { endDate: '2026-11-18', average: null, baseline },
+        { endDate: '2026-11-25', average: thisWeekAverage, baseline },
+      ],
+    });
+    await renderScreen(<WellnessTrend />);
+
+    expect(
+      await screen.findByLabelText(
+        'Sleep, 7-day averages over the last 3 weeks, oldest first: 3.5 (no usual yet); no check-ins; 3.2 (usual 3.9)',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByLabelText(
+        'Fatigue, 7-day averages over the last 3 weeks, oldest first: 2.8 (no usual yet); no check-ins; 3.4 (usual 3.6)',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText('Last 3 weeks, oldest on the left')).toBeTruthy();
+    expect(screen.getByLabelText('Sleep: 7-day average 3.2, usual 3.9')).toBeTruthy();
+  });
+
+  it('still shows earlier weeks when there is no check-in in the last 7 days', async () => {
+    mockMyWellnessTrend.mockResolvedValue({
+      date: '2026-11-25',
+      baselineCheckIns: 20,
+      minCheckIns: 14,
+      weeks: [
+        { endDate: '2026-11-18', average: thisWeekAverage, baseline },
+        { endDate: '2026-11-25', average: null, baseline },
+      ],
+    });
+    await renderScreen(<WellnessTrend />);
+
+    expect(await screen.findByText('No check-ins in the last 7 days.')).toBeTruthy();
+    expect(
+      screen.getByLabelText('Stress, 7-day averages over the last 2 weeks, oldest first: 3.9 (usual 3.8); no check-ins'),
+    ).toBeTruthy();
+  });
+
   it('appears on the Trends tab', async () => {
     mockMyWellnessTrend.mockResolvedValue(
       trend({ endDate: '2026-11-25', average: thisWeekAverage, baseline }, 20),

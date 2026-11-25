@@ -1,4 +1,4 @@
-import type { WellnessTrendPoint } from '@loadwise/analytics';
+import type { WellnessItem, WellnessTrendPoint } from '@loadwise/analytics';
 import { WELLNESS_ITEMS } from '@loadwise/analytics';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
@@ -14,9 +14,9 @@ import { useTheme } from '@/theme/theme';
 const loadTrend = (api: ApiClient) => api.myWellnessTrend();
 
 /**
- * #9 AC3: each wellness item's 7-day average against the athlete's own baseline, from
- * `GET /me/wellness-trend`. Below-usual values are not coloured as warnings: only the flag rules
- * decide what counts as unusual.
+ * #9 AC3: each wellness item's 7-day average against the athlete's own baseline, this week and
+ * for each earlier week, from `GET /me/wellness-trend`. Below-usual values are not coloured as
+ * warnings: only the flag rules decide what counts as unusual.
  */
 export function WellnessTrend() {
   const { colors } = useTheme();
@@ -52,6 +52,7 @@ function Loaded({ data }: { data: WellnessTrendData }) {
   const thisWeek: WellnessTrendPoint | undefined = data.weeks[data.weeks.length - 1];
   const average = thisWeek?.average ?? null;
   const baseline = thisWeek?.baseline ?? null;
+  const anyWeekHasCheckIns = data.weeks.some((week) => week.average !== null);
 
   return (
     <>
@@ -98,11 +99,79 @@ function Loaded({ data }: { data: WellnessTrendData }) {
           );
         })
       )}
+
+      {anyWeekHasCheckIns ? (
+        <>
+          <AppText variant="caption" color="textMuted">
+            {`Last ${data.weeks.length} weeks, oldest on the left`}
+          </AppText>
+          {WELLNESS_ITEMS.map((item) => (
+            <WeeklyBars key={item} item={item} weeks={data.weeks} />
+          ))}
+        </>
+      ) : null}
     </>
+  );
+}
+
+const BAR_HEIGHT = 32;
+const MAX_SCORE = 5;
+
+function weekSummary(item: WellnessItem, week: WellnessTrendPoint): string {
+  if (week.average === null) return 'no check-ins';
+  const usual = week.baseline ? `usual ${oneDecimal(week.baseline.items[item].mean)}` : 'no usual yet';
+  return `${oneDecimal(week.average.items[item])} (${usual})`;
+}
+
+/**
+ * One small bar per week: its height is the 7-day average out of 5 and the tick marks that week's
+ * usual. Screen readers get the same numbers as one summary label.
+ */
+function WeeklyBars({ item, weeks }: { item: WellnessItem; weeks: WellnessTrendPoint[] }) {
+  const { colors } = useTheme();
+  const label = wellnessItemLabels[item];
+  const summary =
+    `${label}, 7-day averages over the last ${weeks.length} weeks, oldest first: ` +
+    weeks.map((week) => weekSummary(item, week)).join('; ');
+
+  return (
+    <View style={styles.history} accessible accessibilityLabel={summary}>
+      <AppText variant="caption" style={styles.historyLabel}>
+        {label}
+      </AppText>
+      <View style={styles.bars}>
+        {weeks.map((week) => (
+          <View key={week.endDate} style={[styles.slot, { backgroundColor: colors.surfaceRaised }]}>
+            {week.average ? (
+              <View
+                style={[
+                  styles.bar,
+                  { height: (week.average.items[item] / MAX_SCORE) * BAR_HEIGHT, backgroundColor: colors.accent },
+                ]}
+              />
+            ) : null}
+            {week.baseline ? (
+              <View
+                style={[
+                  styles.usual,
+                  { bottom: (week.baseline.items[item].mean / MAX_SCORE) * BAR_HEIGHT, backgroundColor: colors.text },
+                ]}
+              />
+            ) : null}
+          </View>
+        ))}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   values: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  history: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
+  historyLabel: { width: 64 },
+  bars: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
+  slot: { flex: 1, height: BAR_HEIGHT, borderRadius: 3, overflow: 'hidden', justifyContent: 'flex-end' },
+  bar: { width: '100%', borderRadius: 3 },
+  usual: { position: 'absolute', left: 0, right: 0, height: 2 },
 });
