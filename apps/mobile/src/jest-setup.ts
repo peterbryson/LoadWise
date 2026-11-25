@@ -1,0 +1,20 @@
+import * as ReactNative from 'react-native';
+
+// Jest's 5 s timeout starts with each test body. react-native loads each component the first time
+// it is used, and on a cold Jest cache (every CI job) Babel transforms it then. On a small CI
+// runner that pushed the first test to render past 5 s (pipeline 8156), and the act() it left open
+// broke the tests after it. Loading the components the app uses here, before any test starts, keeps
+// that one-off cost out of the tests' timing. Add a component here when the app starts using it.
+const usedComponents = [
+  'ActivityIndicator',
+  'AppState',
+  'Pressable',
+  'ScrollView',
+  'StyleSheet',
+  'Text',
+  'TextInput',
+  'View',
+  'useColorScheme',
+] as const;
+
+for (const name of usedComponents) void ReactNative[name];
