@@ -18,6 +18,40 @@ Template:
 
 ---
 
+## DL-024: Coaches see wellness flags without the scores in the squad overview (#10)
+
+- Date: 25 Nov 2026
+- Status: Proposed (chosen by Claude Code while building #10. Peter to accept or change)
+- Context: two rules meet in the squad overview.
+  - Peter's need-to-know matrix (DL-022) gives a coach wellness *status* only, with no individual
+    wellness scores.
+  - CLAUDE.md says every flag shows its reason, value and threshold.
+
+  A wellness flag's value and threshold are an individual score and the score it fell below, so a
+  coach cannot be given both rules in full.
+- Options considered:
+  - **Show coaches the score and guide like other roles.** Meets "value and threshold" literally,
+    but gives a coach exactly the individual scores DL-022 withholds.
+  - **Hide wellness flags from coaches.** Keeps scores private, but a coach would not see that an
+    athlete is flagged, which defeats #10 AC1.
+  - **Show coaches the flag and its rule, without the score or guide value (chosen).** For example,
+    "Sleep today is more than 1.5 SD below their usual". The rule (1.5 SD below their usual) is
+    stated, but not the score.
+- Decision:
+  - The overview returns `value` and `threshold` as null for wellness flags when the viewer's role
+    lacks `WELLNESS_SCORES`, and the reason gives the status only.
+  - S&C coaches and physios see the score and guide.
+  - Load ratio (ACWR) flags show their value and guide to every staff role, because every role has
+    LOAD.
+- Consequences:
+  - Coaches see who is flagged, and for which item, without scores.
+  - The athlete still sees their own full value and threshold.
+  - This deviates from the "value and threshold" rule for one role and one flag type, and needs
+    Peter's confirmation. If he prefers the literal rule, the change is one condition in
+    `SquadOverviewService.forStaff` and the matching test.
+
+---
+
 ## DL-023: Offline queue and duplicate protection (#6, #35 spike outcome)
 
 - Date: 25 Nov 2026
@@ -193,6 +227,16 @@ Template:
   - There is no flag history or acknowledgement until storing is justified.
   - #10's 40-athlete overview (NFR 3.1, p95 under 2 s) must be measured with k6 before choosing
     caching or stored values.
+- Update, 25 Nov 2026 (#10): measured locally with `pnpm --filter @loadwise/api perf:overview`. That
+  run used 40 synthetic athletes with a full season against the local PostgreSQL, timed through the
+  whole API.
+  - **First run:** 10 concurrent staff users gave p95 3,170 ms, so the target was missed. The cause
+    was CPU, not the database: every session date was parsed in every metric.
+  - **After the fix** (remembered date conversions in `dates.ts`, no change to any result): p95
+    599 ms for 10 concurrent users and 127 ms for one user.
+  - **Outcome:** calculating on request still meets NFR 3.1, so no caching or stored values are
+    needed yet.
+  - **Still to do:** k6 against staging (I-25).
 
 ---
 
