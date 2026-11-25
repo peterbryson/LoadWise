@@ -15,15 +15,16 @@ consent-based access.
 
 | Area | State |
 | --- | --- |
-| API | NestJS with `/health`, a global auth guard, #2 create, join and list squads and members, #3 per-squad consent (`PUT /squads/:squadId/consent`) and #11 role-based staff access to one athlete's wellness and injuries |
-| Sign-in (#1) | API verifies Firebase ID tokens when `FIREBASE_PROJECT_ID` is set (checked by hand on 3 Nov with a real token). The app signs in with Firebase email and password. Setup consent is not stored yet (DL-008) |
-| Database | Data model v1 and the init migration ([`docs/design/erd.md`](docs/design/erd.md)) |
-| Analytics | Session load, weekly load, usual week, EWMA ACWR (rolling ACWR as a swappable alternative), monotony and strain (#7, DL-007), computed on read by `GET /me/load` |
-| Mobile app | Expo app running in the browser on localhost: every Figma V1 screen in light and dark. Sign-in and squads are real; Today, Trends, flags and the logging forms are **labelled previews with sample data** (see [`apps/mobile/README.md`](apps/mobile/README.md)) |
-| Staff dashboard | Not started (Sprint 7, Should) |
-| CI | Lint, typecheck and tests on a self-hosted GitLab runner |
-| Staging | Azure Container Apps, Norway East (DL-014). Deployed by hand on 20 Nov; automatic deploy from `main` to follow (#34) |
-| Tests | 76 passing on 3 Nov (9 analytics, 48 API, 19 mobile). API tests fake the database; real PostgreSQL integration tests are still to do |
+| MVP stories | 9 of 11 merged (25 Nov): #1 sign-in, #2 squads, #3 consent, #4 sessions, #5 wellness, #6 offline sync, #7 load metrics, #9 flags, #11 role-based access. Still to build: #8 combined load, #10 squad overview |
+| API | NestJS with `/health` and a global auth guard. `GET /me`, `POST /me/health-consent`, `POST`/`GET /sessions` and `POST /wellness` (idempotent by `clientId`), `GET /me/load`, `GET /me/flags`, `GET /me/wellness-trend`, squads (create, join, list, members), `PUT /squads/:squadId/consent`, and role-based staff access to one athlete's wellness and injuries (DL-022) |
+| Sign-in (#1) | Firebase email and password in the app; the API verifies Firebase ID tokens. Health-data consent is recorded at setup and required for every health-data route (DL-008) |
+| Database | PostgreSQL with three migrations (init, health-data consent, offline-sync `clientId`) ([`docs/design/erd.md`](docs/design/erd.md)) |
+| Analytics | Session load, weekly load, usual week, EWMA ACWR (rolling ACWR as a swappable alternative, DL-018), monotony, strain, wellness baselines and flag rules (DL-007, DL-020). Calculated on each request, never stored (DL-019) |
+| Mobile app | Expo app on localhost (web). Real: sign-in, setup consent, wellness check, session logging with an offline queue, Recent sessions, the Latest session card and flags on Today, Trends (weekly load, ACWR, wellness trend), the flag screen, My squads with per-squad sharing, and the squad members list. Today's load figures are still sample data (I-23) |
+| Staff dashboard | Not started (#10 squad overview is next; the web dashboard is a later Should) |
+| CI | Lint, typecheck and tests on a self-hosted GitLab runner on the laptop. The API image builds only when an image input changes. Tests can time out when the laptop is busy (I-18) |
+| Staging | Azure Container Apps, Norway East (DL-014). Still runs the 20 Nov build; the 25 Nov work, including a migration, is not deployed yet (I-19) |
+| Tests | 659 passing on `main` on 25 Nov (pipeline 8167: 133 analytics, 344 API, 182 mobile). API tests fake the database; real PostgreSQL integration tests are still to do (I-2) |
 
 Remaining MVP work is built athlete-first, one complete feature at a time (DL-005).
 
@@ -81,7 +82,7 @@ The reasoning behind these choices is recorded in [`docs/decision-log.md`](docs/
 | --- | --- |
 | Mobile app | Expo + React Native (TypeScript), Expo Router, Firebase JS SDK; AsyncStorage offline queue with a client UUID per entry as the idempotency key (#6) |
 | Staff dashboard | Next.js (Sprint 7) |
-| API | NestJS (TypeScript), pg-boss background jobs |
+| API | NestJS (TypeScript). pg-boss background jobs are planned but not used: metrics are calculated on request (DL-019) |
 | Database | PostgreSQL + Prisma |
 | Auth | Firebase Authentication (identity only) |
 | Validation | Zod (shared) |

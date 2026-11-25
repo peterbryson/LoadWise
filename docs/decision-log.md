@@ -18,6 +18,211 @@ Template:
 
 ---
 
+## DL-023: Offline queue and duplicate protection (#6, #35 spike outcome)
+
+- Date: 25 Nov 2026
+- Status: Proposed (Peter chose the AsyncStorage queue with a client UUID on 25 Nov; Claude Code
+  chose the retry schedule and the rest of the details below. Peter to accept)
+- Context: #6 needs entries made offline to be kept (AC1), synced within 1 minute of reconnecting
+  (AC2) and never duplicated (AC3). The app also runs on Expo web (DL-010). DL-002 left duplicate
+  protection for sessions to the offline-sync spike (#35). The spike was cut to about an hour inside
+  #6 rather than two days on its own.
+- Options considered:
+  - **Storage.**
+    - expo-sqlite: transactions and queries, but a native dependency with weak Expo web support.
+    - **AsyncStorage (chosen):** already a dependency, works on web (`localStorage`) and in Jest.
+  - **Duplicate protection.**
+    - Match on content (same day, type, minutes and RPE): blocks two genuine identical sessions.
+    - **A UUID generated in the app per entry, stored as a nullable unique `clientId` (chosen):**
+      a retry returns the stored row.
+  - **Noticing the signal is back.**
+    - NetInfo: an event on reconnect, but one more native dependency, and "connected" does not
+      mean the API is reachable.
+    - **Retry when a send fails, when the app returns to the foreground, and on a timer
+      (chosen):** 5, 10 and 20 s, then every 30 s, while anything is waiting. Each send gives up
+      after 15 s.
+- Evidence from the spike:
+  - The web bundle builds and uses `localStorage` and `crypto.randomUUID`.
+  - A fake-timer test reconnects just after a send has hung and syncs within 59 s. The same test
+    fails if the longest wait is raised to 120 s.
+  - Worst case by argument: a 15 s timeout plus a 30 s wait, about 45 s plus one send.
+- Decision:
+  - **Queue:** one AsyncStorage queue per user. Each entry is stored before it is sent and removed
+    only after a 2xx.
+  - **Retries:** 400, 403, 404 and 409 are dropped and the athlete is told why. 5xx, 401, 408,
+    429, timeouts and no signal are retried.
+  - **API:** `POST /sessions` and `POST /wellness` return the stored row with 200 for a replayed
+    `clientId`, including after a unique-index race. Another athlete's `clientId` gives 409. The
+    first write wins.
+  - **Dependency and migration:** adds `expo-crypto`. Migration
+    `20261125120000_offline_sync_client_id`.
+- Consequences:
+  - Nothing syncs while the app is in the background, because timers stop. AC2 holds only while
+    LoadWise is open (see `requirements-changes.md`).
+  - Queued health data sits unencrypted on the device until it syncs, and stays after sign-out
+    (I-17).
+  - Rows saved before #6 have a null `clientId`.
+  - The unique index and the race path are not yet tested against real PostgreSQL (I-2).
+
+---
+
+## DL-022: Role-to-data access matrix for staff (#11) and combined load for staff (#8)
+
+- Date: 25 Nov 2026
+- Status: Proposed (Peter chose the need-to-know matrix and "combined totals only" on 25 Nov;
+  Claude Code chose the enforcement design, the 404 rule and where the matrix lives. Peter to
+  accept)
+- Context: staff must see only consenting athletes' data, and only what their role needs (FR 4,
+  NFR 2). DL-002 left the role-to-data mapping open for #11. #8 needs each squad's staff to see an
+  athlete's load from all their squads.
+- Options considered:
+  - **Matrix.**
+    - **Need-to-know (chosen by Peter):**
+      - COACH: load, flags and wellness status only.
+      - SC_COACH: as COACH, plus monotony and strain and individual wellness scores.
+      - PHYSIO: everything, including injury records.
+    - Simple split: only injury data restricted.
+  - **Enforcement.**
+    - Checks written into each controller.
+    - A different response shape per role on each endpoint.
+    - **One pure matrix with one data category per endpoint, enforced by a guard (chosen).**
+  - **Combined load (#8).**
+    - **Totals and metrics only (chosen by Peter).**
+    - Every session the athlete logged, including other squads'.
+- Decision:
+  - **Matrix:** `STAFF_DATA_ACCESS` in `packages/shared`, so the app's sharing explanation shows
+    the same rule the API enforces.
+  - **Guard:** `@RequiresStaffAccess(category)` runs before body validation and fails closed. On
+    every request it checks against the database, in this order:
+    1. the viewer is staff in the squad (404 if not, so squad ids cannot be probed);
+    2. the viewer's role allows the category (403);
+    3. the athlete is an ATHLETE member of the same squad with `consentGiven = true` (403).
+  - **Caching:** none, so a withdrawal applies on the next request.
+  - **Error messages:** one shared message, with no personal data.
+  - **Injuries:** belong to the athlete (DL-002). A minimal physio-only record path was added so
+    AC1 and AC2 can be tested.
+- Consequences:
+  - Tested for 4 roles × 3 endpoints × 7 cases, against a fake Prisma only (I-2).
+  - NFR 2.2 says these cases "each return 403", but a non-member gets 404 (I-16).
+  - Coach wellness status will come through the flags and #10 overview endpoints.
+  - Two open questions: injury notes are visible to physios in every squad the athlete shares with
+    (I-14), and staff roles are self-declared (I-15).
+  - #10 needs a "consenting athletes this viewer may see" list method.
+
+---
+
+## DL-021: Per-squad consent changes through one transactional service method (#3)
+
+- Date: 25 Nov 2026
+- Status: Proposed (drafted by Claude Code. Peter to accept)
+- Context: DL-002 keeps an append-only `ConsentEvent` history and a cached
+  `Membership.consentGiven`, and CLAUDE.md requires them to change together in one tested
+  method. #3 AC3 requires withdrawal to remove access immediately.
+- Options considered:
+  - **Write an event on every request.** The history fills with repeats.
+  - **Check, then write.** Open to a race between two requests.
+  - **A conditional `updateMany` (`consentGiven = !share`), plus an event only if a row changed,
+    in one `$transaction` (chosen).**
+- Decision: `SquadConsentService.setConsent` is the only writer.
+  - It reads the caller's own membership from the token: 404 if there is none, 403 if it is not an
+    ATHLETE membership.
+  - Granting needs health-data consent (DL-008); withdrawing never does.
+  - Repeated or concurrent identical requests write one event.
+  - Route: `PUT /squads/:squadId/consent` with body `{ share }`.
+- Consequences:
+  - The history holds only real changes.
+  - Concurrency safety relies on PostgreSQL re-checking the UPDATE's condition under READ
+    COMMITTED. This is not yet tested against a real database (I-2).
+  - Withdrawing health-data consent or deleting an account (#14) must also withdraw every squad
+    consent through this method (I-17).
+
+---
+
+## DL-020: Wellness flag details and how flags are shown (#9)
+
+- Date: 25 Nov 2026
+- Status: Proposed (drafted by Claude Code from DL-007 and an independent review. Peter to accept)
+- Context: DL-007 fixes the thresholds (ACWR above 1.5; wellness more than 1.5 SD below a 28-day
+  baseline with at least 14 check-ins) but leaves several details open. CLAUDE.md requires every
+  flag to show its reason, value and threshold, with no diagnostic or advice wording.
+- Options considered:
+  - A combined wellness score, or **one baseline per item (chosen; DL-007 says "each item")**.
+  - Population SD, or **sample SD (n−1) for the baseline (chosen; it estimates normal variation
+    from a sample)**. #7's monotony uses population SD, because it describes one complete week.
+  - When SD is 0: suppress the flag, or **flag any score below the mean (chosen, for now)**.
+  - An empty flag list meaning "fine", or **the response saying which checks actually ran
+    (chosen)**.
+- Decision:
+  - **Boundaries:** strict. ACWR of exactly 1.5, or a score exactly 1.5 SD below the baseline,
+    does not flag.
+  - **Wellness flag:** needs a check-in today and a baseline of at least 14 check-ins.
+  - **`checks`:** `GET /me/flags` returns `checks: { acwr, wellness }`, and the app says "Nothing
+    has been flagged today" only when both checks ran.
+  - **Display:** `flagDisplay()` rounds value and threshold so they never appear to contradict
+    the flag. For example, 1.504 shows as "1.504, above the 1.5 guide".
+  - **ACWR flag:** reuses #7's `MetricsService`, so it always matches `GET /me/load`.
+  - **Wording:** a guard test rejects advice and prediction wording.
+- Consequences:
+  - An athlete who always gives the same score is flagged after a one-point drop. This is a
+    hypothesis for the Sprint 4 flag spike (I-20).
+  - The flag reason uses "SD", which needs checking in the usability test (#44).
+
+---
+
+## DL-019: Load metrics and flags are calculated on request, not stored
+
+- Date: 25 Nov 2026
+- Status: Proposed (Peter chose this on 25 Nov; TODO: Peter: add your reason)
+- Context: NFR 3.3 needs metrics and flags to reflect a new entry within 60 s. CLAUDE.md says
+  derived values are not stored without a measured reason. The design plan mentioned pg-boss
+  recalculation, and the `Flag` table already exists.
+- Options considered:
+  - **Calculate on each request (chosen).** Always current, no stored health data, a threshold
+    change applies at once. Costs CPU on every request.
+  - **pg-boss job recalculates and stores metrics and flags after each entry.** Faster reads, but
+    adds a worker, a table and stale-data cases.
+  - **Cache.** Same staleness questions, with no measurement yet showing it is needed.
+- Decision:
+  - `GET /me/load`, `GET /me/flags` and `GET /me/wellness-trend` call `@loadwise/analytics` on
+    each request.
+  - `GET /me/load` reads the athlete's whole session history, because every EWMA value depends on
+    every day since the first session.
+  - The API owns "today" as the Europe/London date through an injectable clock.
+  - No pg-boss, and the `Flag` table stays unused.
+- Consequences:
+  - There is no flag history or acknowledgement until storing is justified.
+  - #10's 40-athlete overview (NFR 3.1, p95 under 2 s) must be measured with k6 before choosing
+    caching or stored values.
+
+---
+
+## DL-018: Swappable ACWR models (strategy pattern), EWMA by default
+
+- Date: 25 Nov 2026
+- Status: Proposed (drafted by Claude Code. Peter to accept)
+- Context: FR 2 and DL-007 fix EWMA ACWR. The coupled rolling average is the common alternative,
+  and the Sprint 4 flag spike may compare the two. Ch4 and Ch5 need a design pattern that solves a
+  real problem.
+- Options considered:
+  - **EWMA in one function.** Simplest, but changing the model means changing every caller.
+  - **A configuration flag with if/else.** The branching spreads across callers and tests.
+  - **Strategy pattern (chosen).** An `AcwrModel` interface with `EwmaAcwr` and `RollingAcwr`,
+    passed into `loadSummary`, with EWMA as the default.
+- Decision:
+  - **Shared null rules:** both models return null before 28 days since the first session
+    (DL-007), and when chronic load is 0.
+  - **EWMA:** λ = 2/(N+1), with N = 7 for acute and N = 28 for chronic. Both averages start at 0
+    on the day before the first session (DL-007 does not specify this).
+  - **Response:** names the model used.
+- Consequences:
+  - A model can be swapped or compared without touching the API or the app.
+  - The zero start makes steady training read about 1.14 at day 28 rather than 1.0, moving early
+    ACWR towards the 1.5 guide (I-12).
+  - Monotony and strain appear from the first session, counting earlier days as zero (I-13).
+  - An independent review recomputed four fixtures by hand and found them correct.
+
+---
+
 ## DL-017: Claude Code reads and updates the GitLab backlog through the glab CLI
 
 - Date: 25 Nov 2026
