@@ -1,9 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { Icon } from '@/components/Icon';
 import { InlineMessage } from '@/components/InlineMessage';
 import { NavHeader, Screen } from '@/components/Screen';
 import { ApiError, apiBaseUrl, createApiClient, SquadMember } from '@/lib/api';
@@ -83,7 +84,20 @@ export default function SquadMembersScreen() {
             </Card>
           ) : null}
           {athletes.map((member) => (
-            <MemberRow key={member.userId} member={member} />
+            <MemberRow
+              key={member.userId}
+              member={member}
+              // #8: only an athlete who shares data with this squad has a load to open.
+              onOpen={
+                member.consentGiven
+                  ? () =>
+                      router.push({
+                        pathname: '/squad-athlete-load',
+                        params: { squadId, athleteId: member.userId, name: member.displayName },
+                      })
+                  : undefined
+              }
+            />
           ))}
 
           <AppText variant="heading" accessibilityRole="header">
@@ -98,25 +112,50 @@ export default function SquadMembersScreen() {
   );
 }
 
-function MemberRow({ member }: { member: SquadMember }) {
+function MemberRow({ member, onOpen }: { member: SquadMember; onOpen?: () => void }) {
   const detail =
     member.role === 'ATHLETE'
       ? member.consentGiven
         ? 'Sharing data with this squad'
         : 'Not sharing data with this squad'
       : roleLabels[member.role];
+  const text = (
+    <View style={styles.text}>
+      <AppText variant="body">{member.displayName}</AppText>
+      <AppText variant="caption" color="textMuted">
+        {detail}
+      </AppText>
+    </View>
+  );
+
+  if (!onOpen) {
+    return (
+      <Card gap={2}>
+        <View accessible accessibilityLabel={`${member.displayName}, ${detail}`}>
+          {text}
+        </View>
+      </Card>
+    );
+  }
+
   return (
     <Card gap={2}>
-      <View style={styles.row} accessible accessibilityLabel={`${member.displayName}, ${detail}`}>
-        <AppText variant="body">{member.displayName}</AppText>
-        <AppText variant="caption" color="textMuted">
-          {detail}
-        </AppText>
-      </View>
+      <Pressable
+        onPress={onOpen}
+        style={styles.openRow}
+        accessibilityRole="button"
+        accessibilityLabel={`${member.displayName}, ${detail}`}
+        accessibilityHint="Opens their combined load"
+      >
+        {text}
+        <Icon name="chevron-row" size={20} />
+      </Pressable>
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { gap: 2 },
+  text: { gap: 2, flexShrink: 1 },
+  // 44 px minimum height keeps the row a comfortable touch target (WCAG 2.2 target size).
+  openRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
 });

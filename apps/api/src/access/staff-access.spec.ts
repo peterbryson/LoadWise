@@ -91,6 +91,7 @@ const prisma = {
   },
   wellnessEntry: { findMany: jest.fn() },
   injury: { findMany: jest.fn(), create: jest.fn() },
+  session: { findMany: jest.fn() },
 };
 // Added after the object exists, as the callback receives the fake client itself.
 const fakeDb = {
@@ -145,6 +146,22 @@ interface Endpoint {
 }
 
 const ENDPOINTS: Endpoint[] = [
+  {
+    name: 'GET load',
+    category: 'LOAD',
+    okStatus: 200,
+    call: (athleteId, headers) =>
+      request(app.getHttpServer()).get(`/squads/${SQUAD_A}/athletes/${athleteId}/load`).set(headers),
+    dataQuery: () => prisma.session.findMany,
+  },
+  {
+    name: 'GET load-detail',
+    category: 'LOAD_DETAIL',
+    okStatus: 200,
+    call: (athleteId, headers) =>
+      request(app.getHttpServer()).get(`/squads/${SQUAD_A}/athletes/${athleteId}/load-detail`).set(headers),
+    dataQuery: () => prisma.session.findMany,
+  },
   {
     name: 'GET wellness',
     category: 'WELLNESS_SCORES',
@@ -250,6 +267,7 @@ describe('NFR2: role-based access (#11 AC3)', () => {
       { date: new Date('2026-11-24T00:00:00Z'), sleep: 4, soreness: 2, fatigue: 3, stress: 4 },
     ]);
     prisma.injury.findMany.mockResolvedValue([]);
+    prisma.session.findMany.mockResolvedValue([]);
     prisma.injury.create.mockImplementation(({ data }: { data: Record<string, unknown> }) =>
       Promise.resolve({ id: 'inj-1', ...data }),
     );

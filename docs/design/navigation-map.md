@@ -34,8 +34,10 @@ flowchart TD
   trends -.->|"AI button on every tab (disabled)"| ai[AI assistant<br/>#12, #13, #15]:::planned
 
   profile -- "Sign out" --> signin
+  profile <-- "My squads: View members (staff) / back" --> members[Squad members<br/>/squad-members]
+  members <-- "A sharing athlete / back" --> athleteload[Athlete's combined load<br/>/squad-athlete-load]
 
-  class signin,setup,profile,wellness,logsession,history,flag real
+  class signin,setup,profile,wellness,logsession,history,flag,members,athleteload real
   class today,trends preview
   classDef real fill:#d9ead3,stroke:#38761d,color:#000
   classDef preview fill:#fff2cc,stroke:#bf9000,color:#000
@@ -84,6 +86,8 @@ the rest of Today stays sample data until load metrics arrive (#7).
 | Why this was flagged | `/flag` | Today: See why | #9, #12 | Real: today's flags with reason, value and threshold, and which checks ran (#9); the assistant's explanation is #12 |
 | AI assistant | none | AI button (disabled) | #12, #13, #15 | Planned |
 | Recent sessions | `/sessions` | Today: Latest session card | #4 | Real: newest first; offline sessions arrive with #6 |
+| Squad members | `/squad-members` | Profile, My squads: View members (staff only) | #2 (AC3), #3 | Real: athletes with whether they share data, and staff with their role; no health data |
+| Athlete's combined load | `/squad-athlete-load` | Squad members: an athlete who shares data | #8 | Real: weekly load and ACWR from all the athlete's squads, from `GET /squads/:squadId/athletes/:athleteId/load`; totals only (DL-022) |
 
 ## 4. Design choices shown by the map
 

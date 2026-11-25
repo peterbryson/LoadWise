@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import type { RecordInjury } from '@loadwise/shared';
+import type { LoadDetail, LoadTotals, RecordInjury } from '@loadwise/shared';
+import { MetricsService } from '../metrics/metrics.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** One wellness check-in as staff see it. Scores are 1 (worst) to 5 (best). */
@@ -58,7 +59,27 @@ function toInjuryRecord(injury: {
  */
 @Injectable()
 export class SquadAthletesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly metrics: MetricsService,
+  ) {}
+
+  /**
+   * #8: the athlete's combined load, the same totals the athlete sees on Trends. MetricsService reads
+   * every session the athlete logged, whichever squad it was for, so each session counts once
+   * (AC1), and staff of every squad the athlete shares with see the same totals (AC2). Only the
+   * totals are returned, never the sessions behind them (DL-022).
+   */
+  async combinedLoad(athleteId: string): Promise<LoadTotals> {
+    const { today, weeks, usualWeek, acwr } = await this.metrics.myLoad(athleteId);
+    return { today, weeks, usualWeek, acwr };
+  }
+
+  /** #8 with #11: monotony and strain from the same combined sessions, for the LOAD_DETAIL category. */
+  async combinedLoadDetail(athleteId: string): Promise<LoadDetail> {
+    const { today, monotony, strain } = await this.metrics.myLoad(athleteId);
+    return { today, monotony, strain };
+  }
 
   /** The athlete's most recent check-ins, newest first. Selected fields only, no ids or timestamps. */
   async recentWellness(athleteId: string): Promise<StaffWellnessEntry[]> {

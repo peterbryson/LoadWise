@@ -5,8 +5,9 @@ import { renderScreen } from '@/test-utils';
 import SquadMembersScreen from '@/app/squad-members';
 
 const mockSquadMembers = jest.fn();
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => ({ squadId: 'sq-1', squadName: 'Harriers' }),
 }));
 jest.mock('@/lib/api', () => ({
@@ -43,6 +44,33 @@ describe('FR4: squad members for staff (#2 AC3)', () => {
     expect(screen.getByLabelText('Athlete Two, Not sharing data with this squad')).toBeTruthy();
     expect(screen.getByLabelText('Coach C, Coach')).toBeTruthy();
     expect(mockSquadMembers).toHaveBeenCalledWith('sq-1');
+  });
+
+  it('opens the combined load of an athlete who shares data (#8 AC2)', async () => {
+    mockSquadMembers.mockResolvedValue([
+      { userId: 'a1', displayName: 'Athlete One', role: 'ATHLETE', consentGiven: true },
+    ]);
+    await renderScreen(<SquadMembersScreen />);
+
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Athlete One, Sharing data with this squad' }),
+    );
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: '/squad-athlete-load',
+      params: { squadId: 'sq-1', athleteId: 'a1', name: 'Athlete One' },
+    });
+  });
+
+  it('offers nothing to open for an athlete who does not share, or for staff (#3 AC2)', async () => {
+    mockSquadMembers.mockResolvedValue([
+      { userId: 'c1', displayName: 'Coach C', role: 'COACH' },
+      { userId: 'a2', displayName: 'Athlete Two', role: 'ATHLETE', consentGiven: false },
+    ]);
+    await renderScreen(<SquadMembersScreen />);
+
+    expect(await screen.findByLabelText('Athlete Two, Not sharing data with this squad')).toBeTruthy();
+    expect(screen.queryAllByRole('button', { name: /Athlete Two|Coach C/ })).toHaveLength(0);
   });
 
   it('explains a squad with no athletes yet', async () => {
