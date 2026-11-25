@@ -24,7 +24,7 @@ const fakeVerifier: TokenVerifier = {
 const prisma = {
   user: { findUnique: jest.fn(), create: jest.fn() },
   squad: { create: jest.fn(), findUnique: jest.fn() },
-  membership: { create: jest.fn() },
+  membership: { create: jest.fn(), findMany: jest.fn(), findUnique: jest.fn() },
 };
 
 function uniqueViolation(): Prisma.PrismaClientKnownRequestError {
@@ -280,6 +280,119 @@ describe('squads API', () => {
         .post('/squads/join')
         .send({ inviteCode: SQUAD.inviteCode })
         .expect(401);
+    });
+  });
+
+  describe('FR4: GET /squads (#2 AC3 my squads)', () => {
+    it('lists an athlete in two squads with their sharing state and no invite codes (#3 AC1)', async () => {
+      prisma.membership.findMany.mockResolvedValue([
+        { role: 'ATHLETE', consentGiven: true, squad: { id: 'sq-a', name: 'Harriers', inviteCode: 'AAAA2222' } },
+        { role: 'ATHLETE', consentGiven: false, squad: { id: 'sq-b', name: 'Club GAA', inviteCode: 'BBBB3333' } },
+      ]);
+
+      const res = await request(app.getHttpServer()).get('/squads').set(asAthlete).expect(200);
+
+      expect(res.body).toEqual([
+        { squadId: 'sq-a', squadName: 'Harriers', role: 'ATHLETE', consentGiven: true },
+        { squadId: 'sq-b', squadName: 'Club GAA', role: 'ATHLETE', consentGiven: false },
+      ]);
+      expect(JSON.stringify(res.body)).not.toContain('AAAA2222');
+      expect(prisma.membership.findMany.mock.calls[0][0].where).toEqual({ userId: ATHLETE.id });
+    });
+
+    it('gives staff the invite code and no consent field', async () => {
+      prisma.membership.findMany.mockResolvedValue([
+        { role: 'COACH', consentGiven: false, squad: { id: SQUAD.id, name: SQUAD.name, inviteCode: SQUAD.inviteCode } },
+      ]);
+
+      const res = await request(app.getHttpServer()).get('/squads').set(asCoach).expect(200);
+
+      expect(res.body).toEqual([
+        { squadId: SQUAD.id, squadName: SQUAD.name, role: 'COACH', inviteCode: SQUAD.inviteCode },
+      ]);
+    });
+
+    it('returns an empty list for someone in no squads', async () => {
+      prisma.membership.findMany.mockResolvedValue([]);
+
+      await request(app.getHttpServer()).get('/squads').set(asAthlete).expect(200, []);
+    });
+
+    it('requires sign-in (401)', async () => {
+      await request(app.getHttpServer()).get('/squads').expect(401);
+      expect(prisma.membership.findMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('NFR2: GET /squads/:squadId/members (#2 AC3)', () => {
+    const members = [
+      { role: 'COACH', consentGiven: false, user: { id: COACH.id, displayName: 'Coach C' } },
+      { role: 'ATHLETE', consentGiven: true, user: { id: 'u-1', displayName: 'Athlete One' } },
+      { role: 'ATHLETE', consentGiven: false, user: { id: 'u-2', displayName: 'Athlete Two' } },
+    ];
+
+    it.each(['COACH', 'SC_COACH', 'PHYSIO'])(
+      'lets a %s in the squad see each member, their role and whether athletes share data',
+      async (role) => {
+        prisma.membership.findUnique.mockResolvedValue({ role });
+        prisma.membership.findMany.mockResolvedValue(members);
+
+        const res = await request(app.getHttpServer())
+          .get(`/squads/${SQUAD.id}/members`)
+          .set(asCoach)
+          .expect(200);
+
+        expect(res.body).toEqual([
+          { userId: COACH.id, displayName: 'Coach C', role: 'COACH' },
+          { userId: 'u-1', displayName: 'Athlete One', role: 'ATHLETE', consentGiven: true },
+          { userId: 'u-2', displayName: 'Athlete Two', role: 'ATHLETE', consentGiven: false },
+        ]);
+        expect(prisma.membership.findUnique).toHaveBeenCalledWith({
+          where: { userId_squadId: { userId: COACH.id, squadId: SQUAD.id } },
+          select: { role: true },
+        });
+        expect(prisma.membership.findMany.mock.calls[0][0].where).toEqual({ squadId: SQUAD.id });
+      },
+    );
+
+    it('never selects email or health data', async () => {
+      prisma.membership.findUnique.mockResolvedValue({ role: 'COACH' });
+      prisma.membership.findMany.mockResolvedValue([]);
+
+      await request(app.getHttpServer()).get(`/squads/${SQUAD.id}/members`).set(asCoach).expect(200);
+
+      expect(prisma.membership.findMany.mock.calls[0][0].select).toEqual({
+        role: true,
+        consentGiven: true,
+        user: { select: { id: true, displayName: true } },
+      });
+    });
+
+    it('refuses an athlete in the squad (403)', async () => {
+      prisma.membership.findUnique.mockResolvedValue({ role: 'ATHLETE' });
+
+      const res = await request(app.getHttpServer())
+        .get(`/squads/${SQUAD.id}/members`)
+        .set(asAthlete)
+        .expect(403);
+      expect(res.body.message).toBe('Only staff in this squad can see its members');
+      expect(prisma.membership.findMany).not.toHaveBeenCalled();
+    });
+
+    it('answers 404 to a non-member, so the squad id is not confirmed to exist', async () => {
+      prisma.membership.findUnique.mockResolvedValue(null);
+
+      const res = await request(app.getHttpServer())
+        .get(`/squads/${SQUAD.id}/members`)
+        .set(asCoach)
+        .expect(404);
+      expect(res.body.message).toBe('Squad not found');
+      expect(prisma.membership.findMany).not.toHaveBeenCalled();
+    });
+
+    it('requires sign-in (401)', async () => {
+      await request(app.getHttpServer()).get(`/squads/${SQUAD.id}/members`).expect(401);
+      expect(prisma.membership.findUnique).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,15 +1,28 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { CreateSquadSchema, JoinSquadSchema } from '@loadwise/shared';
 import type { CreateSquad, JoinSquad } from '@loadwise/shared';
 import type { AuthUser } from '../auth/auth.service';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { CreatedSquad, JoinedSquad, SquadsService } from './squads.service';
+import { CreatedSquad, JoinedSquad, MySquad, SquadMember, SquadsService } from './squads.service';
 
-/** FR 4, #2: create a squad and invite athletes to it. All routes need a signed-in user. */
+/** FR 4, #2: create, join and list squads. All routes need a signed-in user. */
 @Controller('squads')
 export class SquadsController {
   constructor(private readonly squads: SquadsService) {}
+
+  @Get()
+  listMine(@CurrentUser() user: AuthUser): Promise<MySquad[]> {
+    return this.squads.listMine(user.id);
+  }
+
+  @Get(':squadId/members')
+  listMembers(
+    @CurrentUser() user: AuthUser,
+    @Param('squadId') squadId: string,
+  ): Promise<SquadMember[]> {
+    return this.squads.listMembers(user.id, squadId);
+  }
 
   @Post()
   create(
