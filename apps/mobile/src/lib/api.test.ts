@@ -181,3 +181,19 @@ describe('FR1: session calls (#4)', () => {
     expect(fetchFn).toHaveBeenCalledWith('http://api.test/sessions?limit=1', expect.objectContaining({ method: 'GET' }));
   });
 });
+
+describe('FR2: flags and wellness trend requests (#9)', () => {
+  it.each([
+    ['myFlags', '/me/flags'],
+    ['myWellnessTrend', '/me/wellness-trend'],
+  ] as const)('%s signs in and GETs %s', async (method, path) => {
+    const { client, fetchFn } = clientReturning(jsonResponse(200, {}));
+
+    await client[method]();
+    expect(fetchFn).toHaveBeenCalledWith(`http://api.test${path}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer id-token' },
+      body: undefined,
+    });
+  });
+});

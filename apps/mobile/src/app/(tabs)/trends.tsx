@@ -6,6 +6,7 @@ import { Card } from '@/components/Card';
 import { themedArtwork } from '@/components/Icon';
 import { PreviewBanner } from '@/components/PreviewBanner';
 import { ProgressBar, Screen, ScreenHeader } from '@/components/Screen';
+import { WellnessTrend } from '@/components/WellnessTrend';
 import { sample } from '@/preview/sample-data';
 import { useTheme } from '@/theme/theme';
 
@@ -16,19 +17,20 @@ const states = [
   { value: 'building', label: 'Not enough data' },
 ] as const;
 
-/** Trends: weekly load, load ratio and wellness against the athlete's usual. Sample data only. */
+/** Trends: weekly load, load ratio and wellness against the athlete's usual. Load is sample data. */
 export default function TrendsScreen() {
   const [state, setState] = useState<TrendsState>('full');
   return (
     <Screen withTabBar>
       <ScreenHeader caption={state === 'full' ? 'Last 6 weeks' : 'Your first weeks'} title="Trends" />
       <PreviewBanner
-        note="sample data. Trends arrive with #7 and #9."
+        note="sample load data. Wellness is real (#9); load trends arrive with #7."
         states={states}
         state={state}
         onStateChange={setState}
       />
       {state === 'full' ? <SixWeeks /> : <FirstWeeks />}
+      <WellnessTrend />
     </Screen>
   );
 }
@@ -72,28 +74,6 @@ function SixWeeks() {
         <AppText variant="caption" color="textMuted">
           Dashed line: {sample.flagged.guide} guide. This week is above it.
         </AppText>
-      </Card>
-
-      <Card>
-        <View style={styles.titleRow}>
-          <AppText variant="heading">Wellness</AppText>
-          <AppText variant="caption" color="textMuted">
-            7-day average vs usual
-          </AppText>
-        </View>
-        {sample.wellnessTrend.map((item) => (
-          <View key={item.label} style={styles.titleRow}>
-            <AppText variant="body">{item.label}</AppText>
-            <View style={styles.values}>
-              <AppText variant="heading" color={item.belowUsual ? 'warning' : 'text'}>
-                {item.value}
-              </AppText>
-              <AppText variant="caption" color="textMuted">
-                {item.usual}
-              </AppText>
-            </View>
-          </View>
-        ))}
       </Card>
     </>
   );
@@ -161,7 +141,6 @@ function Bar({ label, value, height, color }: BarProps) {
 
 const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  values: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
   bars: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
   week: { flex: 1, height: 120, alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
   bar: { width: 32, borderTopLeftRadius: 6, borderTopRightRadius: 6 },
