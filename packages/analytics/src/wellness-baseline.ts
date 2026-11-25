@@ -119,6 +119,14 @@ export function wellnessBaseline(entries: readonly WellnessEntry[], today: strin
 }
 
 /**
+ * Check-ins in the baseline window (today - 28 to today - 1), so a screen can show progress
+ * towards the 14 needed while wellnessBaseline() is still null.
+ */
+export function baselineCheckIns(entries: readonly WellnessEntry[], today: string): number {
+  return entriesBetween(entries, dayNumber(today), 1, BASELINE_WINDOW_DAYS).length;
+}
+
+/**
  * Mean of each item over today and the 6 days before it, skipping days without a check-in.
  *
  * @returns null when there is no check-in in those 7 days.

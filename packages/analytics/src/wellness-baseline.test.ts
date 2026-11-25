@@ -1,4 +1,5 @@
 import {
+  baselineCheckIns,
   WellnessEntry,
   wellnessBaseline,
   wellnessSevenDayAverage,
@@ -77,6 +78,13 @@ describe('FR2: wellness baseline (#9 AC1, DL-007)', () => {
     expect(wellnessBaseline([...thirteen, entry('2026-10-27', 1)], TODAY)).toBeNull();
     expect(wellnessBaseline([...thirteen, entry('2026-11-26', 1)], TODAY)).toBeNull();
     expect(wellnessBaseline([...thirteen, entry('2026-10-28', 1)], TODAY)?.count).toBe(14);
+  });
+
+  it('counts check-ins in the window so progress can be shown before there are 14', () => {
+    // 13 in the window; today's check-in and one 29 days ago are outside it.
+    const entries = [...fifteenCheckIns.slice(0, 13), entry(TODAY, 3), entry('2026-10-27', 3)];
+
+    expect(baselineCheckIns(entries, TODAY)).toBe(13);
   });
 
   it('returns null with no check-ins at all', () => {

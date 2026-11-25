@@ -2,6 +2,7 @@ export { sessionLoad } from './session-load';
 export {
   BASELINE_WINDOW_DAYS,
   MIN_BASELINE_CHECK_INS,
+  baselineCheckIns,
   WELLNESS_ITEMS,
   wellnessBaseline,
   wellnessSevenDayAverage,
