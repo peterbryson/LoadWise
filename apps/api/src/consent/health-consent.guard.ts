@@ -2,6 +2,10 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@
 import type { AuthenticatedRequest } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Shared with per-squad consent (#3), which also needs health-data consent before sharing. */
+export const HEALTH_CONSENT_REQUIRED_MESSAGE =
+  'Agree to health-data processing in first-time setup first';
+
 /**
  * #1 AC4, DL-008: refuses a request with 403 unless the signed-in user has agreed to health-data
  * processing. Applied with @RequiresHealthConsent(); runs after the global AuthGuard, so the user
@@ -20,7 +24,7 @@ export class HealthConsentGuard implements CanActivate {
       select: { healthConsentAt: true },
     });
     if (!user?.healthConsentAt) {
-      throw new ForbiddenException('Agree to health-data processing in first-time setup first');
+      throw new ForbiddenException(HEALTH_CONSENT_REQUIRED_MESSAGE);
     }
     return true;
   }

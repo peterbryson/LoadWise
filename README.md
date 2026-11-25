@@ -15,7 +15,7 @@ consent-based access.
 
 | Area | State |
 | --- | --- |
-| API | NestJS with `/health`, a global auth guard, and #2 create a squad and join by invite code (no squad member list yet) |
+| API | NestJS with `/health`, a global auth guard, #2 create, join and list squads and members, #3 per-squad consent (`PUT /squads/:squadId/consent`) and #11 role-based staff access to one athlete's wellness and injuries |
 | Sign-in (#1) | API verifies Firebase ID tokens when `FIREBASE_PROJECT_ID` is set (checked by hand on 3 Nov with a real token). The app signs in with Firebase email and password. Setup consent is not stored yet (DL-008) |
 | Database | Data model v1 and the init migration ([`docs/design/erd.md`](docs/design/erd.md)) |
 | Analytics | Session load, weekly load, usual week, EWMA ACWR (rolling ACWR as a swappable alternative), monotony and strain (#7, DL-007), computed on read by `GET /me/load` |
@@ -46,7 +46,9 @@ loadwise/
 │   │       ├── common/       Zod validation pipe
 │   │       ├── health/       GET /health liveness check
 │   │       ├── prisma/       PrismaService
-│   │       └── squads/       #2 create a squad and join by invite code
+│   │       ├── access/       #11 role-to-data policy and StaffAccessService (squad, role and consent checks)
+│   │       ├── squad-athletes/ #11 staff views of one athlete: wellness scores, injuries
+│   │       └── squads/       #2 create, join and list squads; #3 per-squad consent
 │   └── mobile/               Expo + React Native athlete app (Expo Router, runs on web and phone)
 ├── packages/
 │   ├── analytics/            Pure load-metric functions: session load, EWMA ACWR, monotony, strain
