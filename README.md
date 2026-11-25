@@ -79,7 +79,7 @@ The reasoning behind these choices is recorded in [`docs/decision-log.md`](docs/
 
 | Layer | Technology |
 | --- | --- |
-| Mobile app | Expo + React Native (TypeScript), Expo Router, Firebase JS SDK; expo-sqlite offline queue planned (#6) |
+| Mobile app | Expo + React Native (TypeScript), Expo Router, Firebase JS SDK; AsyncStorage offline queue with a client UUID per entry as the idempotency key (#6) |
 | Staff dashboard | Next.js (Sprint 7) |
 | API | NestJS (TypeScript), pg-boss background jobs |
 | Database | PostgreSQL + Prisma |

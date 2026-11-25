@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ClientIdSchema } from './client-id';
 
 /**
  * 1 (worst) to 5 (best) for every item, confirmed 3 Nov 2026 (#5 AC3). The app labels each end of
@@ -13,6 +14,7 @@ export const WellnessCheckSchema = z.object({
   soreness: score,
   fatigue: score,
   stress: score,
+  clientId: ClientIdSchema.optional(),
 });
 
 export type WellnessCheck = z.infer<typeof WellnessCheckSchema>;

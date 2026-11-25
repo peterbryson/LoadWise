@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react-native';
-import { ReactElement } from 'react';
+import { ReactElement, ReactNode } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider } from './theme/theme';
 
@@ -8,11 +8,15 @@ const metrics = {
   insets: { top: 0, left: 0, right: 0, bottom: 0 },
 };
 
-/** Renders a screen with the providers every screen expects. */
-export async function renderScreen(ui: ReactElement) {
-  return await render(
+function Providers({ children }: { children: ReactNode }) {
+  return (
     <SafeAreaProvider initialMetrics={metrics}>
-      <ThemeProvider>{ui}</ThemeProvider>
-    </SafeAreaProvider>,
+      <ThemeProvider>{children}</ThemeProvider>
+    </SafeAreaProvider>
   );
+}
+
+/** Renders a screen with the providers every screen expects. `rerender` keeps them. */
+export async function renderScreen(ui: ReactElement) {
+  return await render(ui, { wrapper: Providers });
 }

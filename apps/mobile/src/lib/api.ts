@@ -52,14 +52,18 @@ export interface Me {
 }
 
 /** A saved wellness check, from `POST /wellness`. */
-export interface SavedWellness extends WellnessCheck {
+export interface SavedWellness extends Omit<WellnessCheck, 'clientId'> {
   id: string;
+  /** #6: the key the app sent, or null if it was saved without one. */
+  clientId: string | null;
 }
 
 /** A saved session, from `POST /sessions` and `GET /sessions`. `load` is RPE × minutes (AU). */
-export interface SavedSession extends SessionLog {
+export interface SavedSession extends Omit<SessionLog, 'clientId'> {
   id: string;
   load: number;
+  /** #6: the key the app sent, so a synced session can be matched to its queued copy. */
+  clientId: string | null;
 }
 
 /** Today's flags from the deterministic engine, from `GET /me/flags` (#9). */
@@ -144,9 +148,9 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     /** #1 AC4: records consent to the notice version this app shows at setup. */
     giveHealthConsent: () =>
       request<Me>('POST', '/me/health-consent', { noticeVersion: HEALTH_DATA_NOTICE_VERSION }),
-    /** #5: the daily wellness check. 409 if today's check-in is already saved. */
+    /** #5: the daily wellness check. 409 if today's check-in is already saved; 200 for a replayed clientId (#6). */
     saveWellness: (input: WellnessCheck) => request<SavedWellness>('POST', '/wellness', input),
-    /** #4: log a training session or match. */
+    /** #4: log a training session or match. 200 instead of 201 for a replayed clientId (#6). */
     logSession: (input: SessionLog) => request<SavedSession>('POST', '/sessions', input),
     /** #4 AC3, AC4: the athlete's recent sessions, newest first. The API returns 20 unless `limit` (1 to 50) is given. */
     recentSessions: (limit?: number) =>

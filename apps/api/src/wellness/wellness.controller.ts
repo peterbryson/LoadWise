@@ -1,8 +1,9 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Post, Res } from '@nestjs/common';
 import { WellnessCheckSchema } from '@loadwise/shared';
 import type { WellnessCheck } from '@loadwise/shared';
 import type { AuthUser } from '../auth/auth.service';
 import { CurrentUser } from '../auth/current-user.decorator';
+import type { StatusSetter } from '../common/idempotent-write';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { RequiresHealthConsent } from '../consent/requires-health-consent.decorator';
 import { SavedWellness, WellnessService } from './wellness.service';
@@ -13,11 +14,15 @@ import { SavedWellness, WellnessService } from './wellness.service';
 export class WellnessController {
   constructor(private readonly wellness: WellnessService) {}
 
+  /** 201 for a new check-in; 200 when the clientId was already stored, as nothing new was created (#6). */
   @Post()
-  create(
+  async create(
     @CurrentUser() user: AuthUser,
     @Body(new ZodValidationPipe(WellnessCheckSchema)) body: WellnessCheck,
+    @Res({ passthrough: true }) response: StatusSetter,
   ): Promise<SavedWellness> {
-    return this.wellness.create(user.id, body);
+    const { saved, replayed } = await this.wellness.create(user.id, body);
+    if (replayed) response.status(HttpStatus.OK);
+    return saved;
   }
 }

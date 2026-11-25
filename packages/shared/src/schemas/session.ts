@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ClientIdSchema } from './client-id';
 
 /** FR 1: a logged training session or match. One schema validates on the client and the API. */
 // Upper case to match the Prisma SessionType enum (and StaffRoleSchema), so values pass between
@@ -12,6 +13,7 @@ export const SessionLogSchema = z.object({
   durationMinutes: z.number().int().min(1).max(600),
   /** Session-RPE on the CR-10 scale (Foster et al., 2001). */
   rpe: z.number().int().min(1).max(10),
+  clientId: ClientIdSchema.optional(),
 });
 
 export type SessionType = z.infer<typeof SessionTypeSchema>;

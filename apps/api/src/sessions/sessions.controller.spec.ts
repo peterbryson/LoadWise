@@ -1,6 +1,7 @@
 import { INestApplication, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
+import { Prisma } from '@prisma/client';
 import request from 'supertest';
 import { AppModule } from '../app.module';
 import { TOKEN_VERIFIER, TokenVerifier } from '../auth/token-verifier';
@@ -22,7 +23,7 @@ const fakeVerifier: TokenVerifier = {
 
 const prisma = {
   user: { findUnique: jest.fn(), create: jest.fn() },
-  session: { create: jest.fn(), findMany: jest.fn() },
+  session: { create: jest.fn(), findMany: jest.fn(), findUnique: jest.fn() },
 };
 
 const asAthlete = { Authorization: 'Bearer athlete-token' };
@@ -48,8 +49,18 @@ function row(id: string, date: string, durationMinutes: number, rpe: number) {
     date: new Date(date),
     durationMinutes,
     rpe,
+    clientId: null,
     createdAt: new Date(),
   };
+}
+
+const CLIENT_ID = '3f2b8c4e-9a1d-4e6f-b7c2-5d8e1a9f0b34';
+
+function uniqueViolation() {
+  return new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+    code: 'P2002',
+    clientVersion: 'test',
+  });
 }
 
 describe('sessions API', () => {
@@ -73,10 +84,12 @@ describe('sessions API', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     consentGiven(true);
+    // Prisma stores an undefined field as null, so the fake does the same.
     prisma.session.create.mockImplementation((args: { data: Record<string, unknown> }) =>
-      Promise.resolve({ id: 's1', squadId: null, createdAt: new Date(), ...args.data }),
+      Promise.resolve({ id: 's1', squadId: null, createdAt: new Date(), ...args.data, clientId: args.data.clientId ?? null }),
     );
     prisma.session.findMany.mockResolvedValue([]);
+    prisma.session.findUnique.mockResolvedValue(null);
   });
 
   describe('FR1: POST /sessions saves type, duration and RPE (#4 AC1)', () => {
@@ -88,7 +101,7 @@ describe('sessions API', () => {
     it('saves the session for the signed-in athlete and returns its load', async () => {
       const res = await request(app.getHttpServer()).post('/sessions').set(asAthlete).send(session).expect(201);
 
-      expect(res.body).toEqual({ id: 's1', ...session, load: 420 });
+      expect(res.body).toEqual({ id: 's1', ...session, load: 420, clientId: null });
       expect(prisma.session.create).toHaveBeenCalledWith({
         data: {
           athleteId: ATHLETE.id,
@@ -138,8 +151,8 @@ describe('sessions API', () => {
       const res = await request(app.getHttpServer()).get('/sessions').set(asAthlete).expect(200);
 
       expect(res.body).toEqual([
-        { id: 's2', type: 'MATCH', date: '2026-11-20', durationMinutes: 80, rpe: 8, load: 640 },
-        { id: 's1', type: 'MATCH', date: '2026-11-18', durationMinutes: 45, rpe: 5, load: 225 },
+        { id: 's2', type: 'MATCH', date: '2026-11-20', durationMinutes: 80, rpe: 8, load: 640, clientId: null },
+        { id: 's1', type: 'MATCH', date: '2026-11-18', durationMinutes: 45, rpe: 5, load: 225, clientId: null },
       ]);
       expect(prisma.session.findMany).toHaveBeenCalledWith({
         where: { athleteId: ATHLETE.id },
@@ -165,6 +178,77 @@ describe('sessions API', () => {
 
     it('requires sign-in (401)', async () => {
       await request(app.getHttpServer()).get('/sessions').expect(401);
+    });
+  });
+
+  describe('FR1: offline sync idempotency (#6 AC3)', () => {
+    const queued = { ...session, clientId: CLIENT_ID };
+    const stored = { ...row('s9', '2026-11-20', 60, 7), type: 'TRAINING', clientId: CLIENT_ID };
+
+    it('stores a new entry with its clientId (201)', async () => {
+      const res = await request(app.getHttpServer()).post('/sessions').set(asAthlete).send(queued).expect(201);
+
+      expect(res.body).toEqual({ id: 's1', ...session, load: 420, clientId: CLIENT_ID });
+      expect(prisma.session.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ athleteId: ATHLETE.id, clientId: CLIENT_ID }),
+      });
+    });
+
+    it('returns the stored session for a replayed clientId (200) and creates nothing', async () => {
+      prisma.session.findUnique.mockResolvedValue(stored);
+
+      const res = await request(app.getHttpServer()).post('/sessions').set(asAthlete).send(queued).expect(200);
+
+      expect(res.body).toEqual({ id: 's9', ...session, load: 420, clientId: CLIENT_ID });
+      expect(prisma.session.findUnique).toHaveBeenCalledWith({ where: { clientId: CLIENT_ID } });
+      expect(prisma.session.create).not.toHaveBeenCalled();
+    });
+
+    it('returns the stored session when two copies race and the unique index rejects the second (200)', async () => {
+      prisma.session.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(stored);
+      prisma.session.create.mockRejectedValue(uniqueViolation());
+
+      const res = await request(app.getHttpServer()).post('/sessions').set(asAthlete).send(queued).expect(200);
+
+      expect(res.body).toMatchObject({ id: 's9', clientId: CLIENT_ID });
+    });
+
+    it("refuses a clientId already stored for another athlete (409) without revealing that session", async () => {
+      prisma.session.findUnique.mockResolvedValue({ ...stored, athleteId: 'user-other' });
+
+      const res = await request(app.getHttpServer()).post('/sessions').set(asAthlete).send(queued).expect(409);
+
+      expect(res.body).toMatchObject({ statusCode: 409, message: 'This entry could not be saved. Log it again.' });
+      expect(JSON.stringify(res.body)).not.toMatch(/s9|user-other|TRAINING/);
+      expect(prisma.session.create).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['not a UUID', 'abc'],
+      ['an empty string', ''],
+      ['a number', 42],
+    ])('rejects a clientId that is %s (400)', async (_case, clientId) => {
+      await request(app.getHttpServer())
+        .post('/sessions')
+        .set(asAthlete)
+        .send({ ...session, clientId })
+        .expect(400);
+      expect(prisma.session.findUnique).not.toHaveBeenCalled();
+      expect(prisma.session.create).not.toHaveBeenCalled();
+    });
+
+    it('still requires health-data consent for a replay (403)', async () => {
+      consentGiven(false);
+      prisma.session.findUnique.mockResolvedValue(stored);
+
+      await request(app.getHttpServer()).post('/sessions').set(asAthlete).send(queued).expect(403);
+      expect(prisma.session.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('passes on a database failure other than a unique violation (500)', async () => {
+      prisma.session.create.mockRejectedValue(new Error('connection lost'));
+
+      await request(app.getHttpServer()).post('/sessions').set(asAthlete).send(queued).expect(500);
     });
   });
 

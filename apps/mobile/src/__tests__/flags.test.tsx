@@ -28,6 +28,17 @@ jest.mock('@/lib/api', () => ({
   createApiClient: () => ({ myFlags: mockMyFlags, recentSessions: mockRecentSessions }),
 }));
 jest.mock('@/lib/auth', () => ({ useAuth: jest.fn() }));
+// Today also shows the offline sync card (#6); these tests are about flags, so nothing is waiting.
+jest.mock('@/lib/offline-sync', () => ({
+  useOfflineSync: () => ({
+    pending: [],
+    syncCount: 0,
+    problems: [],
+    dismissProblems: jest.fn(),
+    saveSession: jest.fn(),
+    saveWellness: jest.fn(),
+  }),
+}));
 
 const acwrFlag: Flag = {
   rule: 'ACWR_HIGH',

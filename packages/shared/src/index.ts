@@ -1,4 +1,5 @@
 export * from './schemas/access';
+export * from './schemas/client-id';
 export * from './schemas/consent';
 export * from './schemas/injury';
 export * from './schemas/session';

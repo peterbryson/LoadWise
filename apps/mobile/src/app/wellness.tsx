@@ -1,15 +1,16 @@
 import { WellnessCheckSchema } from '@loadwise/shared';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { InlineMessage } from '@/components/InlineMessage';
 import { OptionRow } from '@/components/Option';
 import { NavHeader, Screen } from '@/components/Screen';
-import { ApiError, apiBaseUrl, createApiClient } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
+import { ApiError } from '@/lib/api';
 import { localIsoDate } from '@/lib/dates';
+import { OFFLINE_SAVED_MESSAGE } from '@/lib/offline-queue';
+import { useOfflineSync } from '@/lib/offline-sync';
 
 type Item = 'sleep' | 'soreness' | 'fatigue' | 'stress';
 
@@ -25,15 +26,17 @@ const scores = [1, 2, 3, 4, 5].map((value) => ({ value, label: String(value) }))
 
 /**
  * #5 wellness check. The form validates with the shared schema, then saves through the API, which
- * allows one check-in per day (AC2). Saving returns to Today.
+ * allows one check-in per day (AC2). Saving returns to Today. With no signal the check-in is kept
+ * on the device and synced later (#6 AC1); a second check-in for the same day is still refused
+ * when it syncs, because the API keeps the one-per-day rule.
  */
 export default function WellnessScreen() {
   const router = useRouter();
   const [answers, setAnswers] = useState<Partial<Record<Item, number>>>({});
-  const { getIdToken } = useAuth();
-  const api = useMemo(() => createApiClient({ baseUrl: apiBaseUrl, getIdToken }), [getIdToken]);
+  const { saveWellness } = useOfflineSync();
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [queued, setQueued] = useState(false);
 
   async function save() {
     const result = WellnessCheckSchema.safeParse({ date: localIsoDate(new Date()), ...answers });
@@ -44,7 +47,12 @@ export default function WellnessScreen() {
     setError(null);
     setSaving(true);
     try {
-      await api.saveWellness(result.data);
+      const outcome = await saveWellness(result.data);
+      if (outcome.status === 'queued') {
+        setQueued(true);
+        setSaving(false);
+        return;
+      }
       router.back();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.');
@@ -81,7 +89,14 @@ export default function WellnessScreen() {
       <InlineMessage kind="info" text="In pain or injured? Speak to a physio or GP." />
       {error ? <InlineMessage kind="error" text={error} /> : null}
 
-      <Button label="Save check-in" onPress={save} loading={saving} />
+      {queued ? (
+        <>
+          <InlineMessage kind="info" text={OFFLINE_SAVED_MESSAGE} />
+          <Button label="Back to Today" onPress={() => router.back()} />
+        </>
+      ) : (
+        <Button label="Save check-in" onPress={save} loading={saving} />
+      )}
     </Screen>
   );
 }
