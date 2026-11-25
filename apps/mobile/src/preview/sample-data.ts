@@ -15,19 +15,6 @@ export const sample = {
     title: 'Your load has increased faster than usual',
   },
   wellnessInsight: 'Sleep is lower than your recent average.',
-  weeklyLoad: [
-    { label: 'Wk 1', height: 43 },
-    { label: 'Wk 2', height: 48 },
-    { label: 'Wk 3', height: 46 },
-    { label: 'Wk 4', height: 49 },
-    { label: 'Wk 5', height: 47 },
-  ],
-  nowBar: { label: 'Now', value: '3,240', height: 76 },
-  firstWeeks: [
-    { label: 'Last wk', value: '980', height: 60 },
-    { label: 'Now', value: '1,240', height: 76 },
-  ],
-  loggedSoFar: '8 check-ins and 5 sessions. Keep logging for a fuller picture.',
   wellnessTrend: [
     { label: 'Sleep', value: '3.2', usual: 'below usual 3.9', belowUsual: true },
     { label: 'Soreness', value: '3.8', usual: 'usual 3.7', belowUsual: false },
