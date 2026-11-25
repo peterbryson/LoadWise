@@ -61,11 +61,11 @@ describe('FR4: squad members for staff (#2 AC3)', () => {
 
   it('shows the API’s reason when access is refused, and retries', async () => {
     mockSquadMembers
-      .mockRejectedValueOnce(new ApiError(403, 'Only staff in this squad can see its members'))
+      .mockRejectedValueOnce(new ApiError(403, 'Only staff in this squad can see this'))
       .mockResolvedValueOnce([]);
     await renderScreen(<SquadMembersScreen />);
 
-    expect(await screen.findByText('Only staff in this squad can see its members')).toBeTruthy();
+    expect(await screen.findByText('Only staff in this squad can see this')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
 
     expect(await screen.findByText('Athletes (0)')).toBeTruthy();
