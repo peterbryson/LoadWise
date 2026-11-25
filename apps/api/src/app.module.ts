@@ -6,6 +6,7 @@ import { HealthModule } from './health/health.module';
 import { MeModule } from './me/me.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SessionsModule } from './sessions/sessions.module';
+import { SquadAthletesModule } from './squad-athletes/squad-athletes.module';
 import { SquadsModule } from './squads/squads.module';
 import { WellnessModule } from './wellness/wellness.module';
 
@@ -14,7 +15,16 @@ import { WellnessModule } from './wellness/wellness.module';
  * gets its own module under src/<feature>/ and is imported here.
  */
 @Module({
-  imports: [PrismaModule, AuthModule, HealthModule, MeModule, SquadsModule, WellnessModule, SessionsModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    HealthModule,
+    MeModule,
+    SquadsModule,
+    SquadAthletesModule,
+    WellnessModule,
+    SessionsModule,
+  ],
   // APP_FILTER applies the filter to every route, so all errors share one shape (#27).
   providers: [{ provide: APP_FILTER, useClass: HttpExceptionFilter }],
 })

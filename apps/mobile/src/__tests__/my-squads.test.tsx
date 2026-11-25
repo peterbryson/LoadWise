@@ -128,6 +128,15 @@ describe('NFR2: per-squad sharing switch (#3)', () => {
     expect(sharingSwitch('Club GAA').props.value).toBe(false);
   });
 
+  it('shows what each staff role in the squad would see, before sharing is turned on', async () => {
+    await setup(jest.fn().mockResolvedValue([otherAthleteSquad])).view;
+    await screen.findByText('Club GAA');
+
+    expect(screen.getByText(/^• Coach: weekly load and ACWR/)).toBeTruthy();
+    expect(screen.getByText(/^• Physio: .*injury records$/)).toBeTruthy();
+    expect(screen.getByLabelText(/^What each role in this squad can see\. Coach:/)).toBeTruthy();
+  });
+
   it('shows no sharing switch for staff memberships', async () => {
     await setup(jest.fn().mockResolvedValue([coachSquad])).view;
     await screen.findByText('U20s');

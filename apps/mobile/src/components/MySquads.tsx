@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Switch, View } from 'react-native';
 import { ApiClient, ApiError, MySquad } from '@/lib/api';
+import { whatEachRoleSees } from '@/lib/data-access';
 import { roleLabels } from '@/lib/roles';
 import { useTheme } from '@/theme/theme';
 import { AppText } from './AppText';
@@ -128,6 +129,7 @@ function SquadSharing({ api, squad, onChanged }: SquadSharingProps) {
   const [confirmingStop, setConfirmingStop] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const seen = whatEachRoleSees().map((line) => line.text);
 
   async function save(share: boolean) {
     setBusy(true);
@@ -168,6 +170,16 @@ function SquadSharing({ api, squad, onChanged }: SquadSharingProps) {
           ? 'Staff in this squad can see your data, limited to what their role needs. You can stop at any time.'
           : 'Staff in this squad see none of your data until you turn this on. Your logging is not affected.'}
       </AppText>
+      <View style={styles.roles} accessible accessibilityLabel={`What each role in this squad can see. ${seen.join('. ')}`}>
+        <AppText variant="caption" color="textMuted">
+          What each role in this squad can see:
+        </AppText>
+        {seen.map((line) => (
+          <AppText key={line} variant="caption" color="textMuted">
+            {`• ${line}`}
+          </AppText>
+        ))}
+      </View>
 
       {confirmingStop ? (
         <View style={styles.confirm} accessibilityLiveRegion="polite">
@@ -193,4 +205,5 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 48 },
   flex: { flex: 1 },
   confirm: { gap: 8 },
+  roles: { gap: 2 },
 });
