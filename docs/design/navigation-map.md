@@ -35,8 +35,8 @@ flowchart TD
 
   profile -- "Sign out" --> signin
 
-  class signin,setup,profile,wellness,logsession,history real
-  class today,trends,flag preview
+  class signin,setup,profile,wellness,logsession,history,flag real
+  class today,trends preview
   classDef real fill:#d9ead3,stroke:#38761d,color:#000
   classDef preview fill:#fff2cc,stroke:#bf9000,color:#000
   classDef planned fill:#f3f3f3,stroke:#999,stroke-dasharray:4 3,color:#555
@@ -76,12 +76,12 @@ the rest of Today stays sample data until load metrics arrive (#7).
 | --- | --- | --- | --- | --- |
 | Sign in | `/sign-in` | App start when signed out; Sign out | #1 | Real (Firebase) |
 | First-time setup | `/setup` | Create an account; any signed-in user without recorded consent | #1 (AC4) | Real: consent stored through `POST /me/health-consent` (DL-008) |
-| Today | `/` (tab) | Sign in, setup, closing any form | #7, #9 | Preview: states New user, Usual range, Flagged, Saved offline |
-| Trends | `/trends` (tab) | Tab bar | #7, #9 | Preview |
+| Today | `/` (tab) | Sign in, setup, closing any form | #7, #9 | Partly real: flags from `GET /me/flags` (#9) and Latest session; load figures are preview (states New user, Usual range, Saved offline) |
+| Trends | `/trends` (tab) | Tab bar | #7, #9 | Partly real: wellness 7-day averages vs baseline from `GET /me/wellness-trend` (#9 AC3); load is preview |
 | Profile | `/profile` (tab) | Tab bar | #1, #2 | Real: account, squads (create and join), sign out |
 | Wellness check | `/wellness` (modal) | Today: Start check-in | #5 | Real: saves one check-in per day |
 | Log session | `/log-session` (modal) | Today: Log a session | #4 | Real: saves type, duration and RPE |
-| Why this was flagged | `/flag` | Today: See why | #9, #12 | Preview: sample flag |
+| Why this was flagged | `/flag` | Today: See why | #9, #12 | Real: today's flags with reason, value and threshold (#9); the assistant's explanation is #12 |
 | AI assistant | none | AI button (disabled) | #12, #13, #15 | Planned |
 | Recent sessions | `/sessions` | Today: Latest session card | #4 | Real: newest first; offline sessions arrive with #6 |
 
