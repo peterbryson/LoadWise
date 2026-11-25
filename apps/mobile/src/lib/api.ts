@@ -1,5 +1,6 @@
 import { HEALTH_DATA_NOTICE_VERSION } from '@loadwise/shared';
 import type { CreateSquad, MyLoad, SessionLog, StaffRole, WellnessCheck } from '@loadwise/shared';
+import type { Flag, FlagChecks, WellnessTrendPoint } from '@loadwise/analytics';
 
 /** An API failure with a message that is safe to show on screen. */
 export class ApiError extends Error {
@@ -59,6 +60,25 @@ export interface SavedWellness extends WellnessCheck {
 export interface SavedSession extends SessionLog {
   id: string;
   load: number;
+}
+
+/** Today's flags from the deterministic engine, from `GET /me/flags` (#9). */
+export interface CurrentFlags {
+  date: string;
+  flags: Flag[];
+  /** Which rules ran. No flags is only an all-clear when both are 'checked'. */
+  checks: FlagChecks;
+  baselineCheckIns: number;
+  minCheckIns: number;
+}
+
+/** 7-day wellness averages against the athlete's baseline, from `GET /me/wellness-trend` (#9 AC3). */
+export interface WellnessTrend {
+  date: string;
+  baselineCheckIns: number;
+  minCheckIns: number;
+  /** Oldest first; the last week ends today. */
+  weeks: WellnessTrendPoint[];
 }
 
 interface ApiClientOptions {
@@ -133,6 +153,10 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
       request<SavedSession[]>('GET', limit === undefined ? '/sessions' : `/sessions?limit=${limit}`),
     /** #7 AC3: weekly load for the last 6 weeks and ACWR, calculated by the API from the athlete's sessions. */
     myLoad: () => request<MyLoad>('GET', '/me/load'),
+    /** #9: today's flags, each with its reason, value and threshold. */
+    myFlags: () => request<CurrentFlags>('GET', '/me/flags'),
+    /** #9 AC3: wellness 7-day averages against baseline for the Trends tab. */
+    myWellnessTrend: () => request<WellnessTrend>('GET', '/me/wellness-trend'),
   };
 }
 

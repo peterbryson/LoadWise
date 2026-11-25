@@ -20,7 +20,8 @@ jest.mock('expo-router', () => {
 });
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  createApiClient: () => ({ myLoad: mockMyLoad }),
+  // The wellness card is tested in wellness-trend.test.tsx, so here it just stays loading.
+  createApiClient: () => ({ myLoad: mockMyLoad, myWellnessTrend: () => new Promise(() => {}) }),
 }));
 jest.mock('@/lib/auth', () => ({ useAuth: jest.fn() }));
 
@@ -169,11 +170,11 @@ describe('FR2: Trends shows weekly load and ACWR (#7 AC3)', () => {
     expect(await screen.findByText('Agree to health-data processing in first-time setup first')).toBeTruthy();
   });
 
-  it('keeps the wellness section marked as a preview, separate from the real load data', async () => {
+  it('shows the real wellness trend (#9) with no sample-data preview banner left on Trends', async () => {
     mockMyLoad.mockResolvedValue(myLoad());
     await renderScreen(<TrendsScreen />);
 
-    expect(await screen.findByText('Preview: sample wellness data. Wellness trends arrive with #9.')).toBeTruthy();
-    expect(screen.queryByText(/Preview: sample data\. Trends arrive/)).toBeNull();
+    expect(await screen.findByLabelText('Loading wellness trend')).toBeTruthy();
+    expect(screen.queryByText(/Preview: sample/)).toBeNull();
   });
 });

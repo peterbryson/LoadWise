@@ -182,6 +182,22 @@ describe('FR1: session calls (#4)', () => {
   });
 });
 
+describe('FR2: flags and wellness trend requests (#9)', () => {
+  it.each([
+    ['myFlags', '/me/flags'],
+    ['myWellnessTrend', '/me/wellness-trend'],
+  ] as const)('%s signs in and GETs %s', async (method, path) => {
+    const { client, fetchFn } = clientReturning(jsonResponse(200, {}));
+
+    await client[method]();
+    expect(fetchFn).toHaveBeenCalledWith(`http://api.test${path}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer id-token' },
+      body: undefined,
+    });
+  });
+});
+
 describe('FR2: load metrics call (#7)', () => {
   it('reads weekly load and ACWR from GET /me/load with the token', async () => {
     const load = {

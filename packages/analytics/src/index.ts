@@ -7,3 +7,23 @@ export { MONOTONY_DAYS, monotony, strain } from './monotony';
 export { sessionLoad } from './session-load';
 export { dailyLoads, firstSessionDate, USUAL_WEEK_WEEKS, usualWeek, weeklyLoads } from './weekly-load';
 export type { LoggedSession, WeekLoad } from './weekly-load';
+export {
+  BASELINE_WINDOW_DAYS,
+  MIN_BASELINE_CHECK_INS,
+  baselineCheckIns,
+  WELLNESS_ITEMS,
+  wellnessBaseline,
+  wellnessSevenDayAverage,
+  wellnessTrend,
+} from './wellness-baseline';
+export type {
+  ItemBaseline,
+  WellnessAverage,
+  WellnessBaseline,
+  WellnessEntry,
+  WellnessItem,
+  WellnessScores,
+  WellnessTrendPoint,
+} from './wellness-baseline';
+export { DEFAULT_FLAG_THRESHOLDS, evaluateFlags, flagChecks, flagDisplay } from './flags';
+export type { Flag, FlagChecks, FlagInputs, FlagRule, FlagThresholds } from './flags';
