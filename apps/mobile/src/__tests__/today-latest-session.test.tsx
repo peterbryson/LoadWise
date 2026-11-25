@@ -8,6 +8,7 @@ import TodayScreen from '@/app/(tabs)/index';
 
 const mockPush = jest.fn();
 const mockRecentSessions = jest.fn();
+const mockMyFlags = jest.fn();
 jest.mock('expo-router', () => {
   const { useEffect } = jest.requireActual<typeof import('react')>('react');
   // Today is always in view in these tests, so a focus effect behaves like a normal effect.
@@ -22,7 +23,7 @@ jest.mock('expo-router', () => {
 });
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  createApiClient: () => ({ recentSessions: mockRecentSessions }),
+  createApiClient: () => ({ recentSessions: mockRecentSessions, myFlags: mockMyFlags }),
 }));
 jest.mock('@/lib/auth', () => ({ useAuth: jest.fn() }));
 jest.mock('@/lib/offline-sync', () => ({ useOfflineSync: jest.fn() }));
@@ -73,6 +74,13 @@ describe('FR1 #4: latest session on Today (AC4)', () => {
       getIdToken: jest.fn(),
     });
     withQueue([]);
+    mockMyFlags.mockResolvedValue({
+      date: '2026-11-25',
+      flags: [],
+      checks: { acwr: 'unavailable', wellness: 'no-baseline' },
+      baselineCheckIns: 0,
+      minCheckIns: 14,
+    });
   });
 
   it('shows the newest session with its type, duration, date, RPE and load', async () => {

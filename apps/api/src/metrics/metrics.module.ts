@@ -6,5 +6,6 @@ import { MetricsService } from './metrics.service';
 @Module({
   controllers: [MetricsController],
   providers: [MetricsService, { provide: CLOCK, useValue: systemClock }],
+  exports: [MetricsService],
 })
 export class MetricsModule {}
