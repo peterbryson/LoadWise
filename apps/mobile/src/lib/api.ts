@@ -44,6 +44,14 @@ export type SquadMember =
   | { userId: string; displayName: string; role: 'ATHLETE'; consentGiven: boolean }
   | { userId: string; displayName: string; role: StaffRole };
 
+/** #49: a squad's invite code, for its staff. Only a COACH may replace it (`canReplace`). */
+export interface SquadInvite {
+  squadId: string;
+  squadName: string;
+  inviteCode: string;
+  canReplace: boolean;
+}
+
 /** The athlete's sharing state for one squad, from `PUT /squads/:squadId/consent`. */
 export interface SquadConsentState {
   squadId: string;
@@ -149,6 +157,12 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     /** #2 AC3: a squad's members. 403 for athletes, 404 if the caller is not in the squad. */
     squadMembers: (squadId: string) =>
       request<SquadMember[]>('GET', `/squads/${encodeURIComponent(squadId)}/members`),
+    /** #49 AC1: the squad's current invite code. 403 for athletes, 404 if the caller is not in the squad. */
+    squadInvite: (squadId: string) =>
+      request<SquadInvite>('GET', `/squads/${encodeURIComponent(squadId)}/invite-code`),
+    /** #49 AC3: a coach replaces the squad's invite code; the old code stops joining the squad. */
+    replaceInviteCode: (squadId: string) =>
+      request<SquadInvite>('POST', `/squads/${encodeURIComponent(squadId)}/invite-code`),
     /** #3: start or stop sharing the athlete's data with one squad. Repeating a request changes nothing. */
     setSquadConsent: (squadId: string, share: boolean) =>
       request<SquadConsentState>('PUT', `/squads/${encodeURIComponent(squadId)}/consent`, { share }),
