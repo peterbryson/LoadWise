@@ -1,11 +1,15 @@
 import { HEALTH_DATA_NOTICE_VERSION } from '@loadwise/shared';
 import type {
+  CreatedTeamSession,
   CreateSquad,
+  CreateTeamSession,
   LoadTotals,
   MyLoad,
   SessionLog,
   SquadOverview,
   StaffRole,
+  RateTeamSession,
+  TeamSessionToRate,
   WellnessCheck,
 } from '@loadwise/shared';
 import type { Flag, FlagChecks, WellnessTrendPoint } from '@loadwise/analytics';
@@ -178,6 +182,14 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     myFlags: () => request<CurrentFlags>('GET', '/me/flags'),
     /** #9 AC3: wellness 7-day averages against baseline for the Trends tab. */
     myWellnessTrend: () => request<WellnessTrend>('GET', '/me/wellness-trend'),
+    /** #17 AC1: a coach or S&C coach logs a team session once for the squad. */
+    createTeamSession: (squadId: string, input: CreateTeamSession) =>
+      request<CreatedTeamSession>('POST', `/squads/${encodeURIComponent(squadId)}/team-sessions`, input),
+    /** #17 AC2: team sessions from the athlete's squads that they have not yet added an RPE to. */
+    teamSessionsToRate: () => request<TeamSessionToRate[]>('GET', '/team-sessions/to-rate'),
+    /** #17 AC2: the athlete's RPE for a team session, saved as their own session. 409 if already rated. */
+    rateTeamSession: (teamSessionId: string, input: RateTeamSession) =>
+      request<SavedSession>('POST', `/team-sessions/${encodeURIComponent(teamSessionId)}/rating`, input),
   };
 }
 

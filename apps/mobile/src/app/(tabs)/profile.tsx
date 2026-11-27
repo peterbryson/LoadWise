@@ -88,6 +88,12 @@ export default function ProfileScreen() {
             params: { squadId: squad.squadId, squadName: squad.squadName },
           })
         }
+        onLogTeamSession={(squad) =>
+          router.push({
+            pathname: '/log-team-session',
+            params: { squadId: squad.squadId, squadName: squad.squadName },
+          })
+        }
       />
 
       <SquadTools api={api} onChanged={() => setSquadsVersion((n) => n + 1)} />

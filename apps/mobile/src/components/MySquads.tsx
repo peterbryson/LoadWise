@@ -1,3 +1,4 @@
+import { TEAM_SESSION_CREATOR_ROLES } from '@loadwise/shared';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Switch, View } from 'react-native';
 import { ApiClient, ApiError, MySquad } from '@/lib/api';
@@ -23,6 +24,8 @@ interface MySquadsProps {
   onOpenMembers: (squad: MySquad) => void;
   /** #10: staff open the squad overview of athletes' status and flags. */
   onOpenOverview: (squad: MySquad) => void;
+  /** #17: coaches and S&C coaches log a team session for the squad. Not shown if left out. */
+  onLogTeamSession?: (squad: MySquad) => void;
 }
 
 function errorText(error: unknown): string {
@@ -33,7 +36,7 @@ function errorText(error: unknown): string {
  * #2 AC3 and #3: the squads the signed-in user belongs to, with their role in each. For athlete
  * memberships it holds the per-squad "Share my data" switch.
  */
-export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview }: MySquadsProps) {
+export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview, onLogTeamSession }: MySquadsProps) {
   const { colors } = useTheme();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
@@ -106,6 +109,14 @@ export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview }: MyS
                     accessibilityHint={`Shows each athlete's status and flags in ${squad.squadName}`}
                     onPress={() => onOpenOverview(squad)}
                   />
+                  {onLogTeamSession && TEAM_SESSION_CREATOR_ROLES.includes(squad.role) ? (
+                    <Button
+                      label="Log team session"
+                      variant="secondary"
+                      accessibilityHint={`Logs one session for ${squad.squadName}; each athlete adds their RPE`}
+                      onPress={() => onLogTeamSession(squad)}
+                    />
+                  ) : null}
                   <Button
                     label="View members"
                     variant="secondary"
