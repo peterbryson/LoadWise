@@ -5,19 +5,22 @@ describe('NFR2: what athletes are told each role sees (#3, #11)', () => {
     expect(whatEachRoleSees()).toEqual([
       {
         role: 'COACH',
-        text: 'Coach: weekly load and ACWR, flags and their reasons, whether your wellness is below your usual',
+        text:
+          'Coach: weekly load and ACWR, flags and their reasons, whether your wellness is below your usual, ' +
+          'training restrictions set by the physio',
       },
       {
         role: 'SC_COACH',
         text:
           'S&C coach: weekly load and ACWR, monotony and strain, flags and their reasons, ' +
-          'whether your wellness is below your usual, your wellness scores',
+          'whether your wellness is below your usual, your wellness scores, training restrictions set by the physio',
       },
       {
         role: 'PHYSIO',
         text:
           'Physio: weekly load and ACWR, monotony and strain, flags and their reasons, ' +
-          'whether your wellness is below your usual, your wellness scores, injury records',
+          'whether your wellness is below your usual, your wellness scores, training restrictions set by the physio, ' +
+          'injury records',
       },
     ]);
   });

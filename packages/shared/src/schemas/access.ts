@@ -10,6 +10,7 @@ export const DATA_CATEGORIES = [
   'FLAGS',
   'WELLNESS_STATUS',
   'WELLNESS_SCORES',
+  'RESTRICTIONS',
   'INJURY',
 ] as const;
 
@@ -25,11 +26,20 @@ export type SquadRole = 'ATHLETE' | StaffRole;
  *
  * - LOAD: weekly load and ACWR. LOAD_DETAIL: monotony and strain.
  * - WELLNESS_STATUS: only whether wellness is below the athlete's usual, no individual scores.
+ * - RESTRICTIONS (#21): the physio's active training restrictions, such as "No contact training",
+ *   with no injury details. INJURY: injury records and notes, and setting or ending restrictions.
  * - An athlete sees nothing about other athletes through a squad.
  */
 export const STAFF_DATA_ACCESS: Readonly<Record<SquadRole, readonly DataCategory[]>> = Object.freeze({
   ATHLETE: Object.freeze([]),
-  COACH: Object.freeze(['LOAD', 'FLAGS', 'WELLNESS_STATUS'] as const),
-  SC_COACH: Object.freeze(['LOAD', 'LOAD_DETAIL', 'FLAGS', 'WELLNESS_STATUS', 'WELLNESS_SCORES'] as const),
+  COACH: Object.freeze(['LOAD', 'FLAGS', 'WELLNESS_STATUS', 'RESTRICTIONS'] as const),
+  SC_COACH: Object.freeze([
+    'LOAD',
+    'LOAD_DETAIL',
+    'FLAGS',
+    'WELLNESS_STATUS',
+    'WELLNESS_SCORES',
+    'RESTRICTIONS',
+  ] as const),
   PHYSIO: Object.freeze(DATA_CATEGORIES),
 });
