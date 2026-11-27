@@ -18,6 +18,27 @@ Template:
 
 ---
 
+## DL-025: Gather user requirements with an online form instead of interviews
+
+- Date: 26 Nov 2026
+- Status: Accepted (Peter's proposal; agreed by the supervisor at the 26 Nov meeting)
+- Context: the plan was 3 to 5 semi-structured interviews with coaches, physios and athletes (#41,
+  interview guides in `docs/research/interview-guide.md`), for Ch1 user analysis and to check the
+  requirements. Booking interviews with amateur coaches and players is slow, and none had been booked
+  by 26 Nov.
+- Options considered:
+  - **Interviews.** Rich, follow-up questions possible, but few responses and hard to schedule.
+  - **Online form (chosen).** Easier for people to fill in at a time that suits them, so more
+    responses and quantitative answers that can be summarised; less depth and no follow-up.
+- Decision: replace the interviews with a short online form for athletes, coaches, physios and S&C
+  coaches, built from the existing interview guides. Optional: a short follow-up chat with one or two
+  respondents who agree to it, for depth.
+- Consequences: Ch1 uses response counts and summaries instead of interview quotes. The form must say
+  what the answers are used for, be anonymous unless the respondent opts in, and not collect personal
+  health data. Requirement changes that come from responses are logged in `requirements-changes.md`.
+
+---
+
 ## DL-024: Coaches see wellness flags without the scores in the squad overview (#10)
 
 - Date: 25 Nov 2026
@@ -321,6 +342,8 @@ Template:
   submission 19 Apr 2027). One limit replaces the sprint commitment: merge requests are reviewed
   and merged one at a time, and Peter must be able to explain each one before merging. A short
   review (what merged, what is blocked, one process change) still happens about every two weeks.
+- Update, 26 Nov 2026: the supervisor agreed that abandoning sprints is fine, as they can hold the
+  project back (`docs/meetings/2026-11-26-supervisor.md`).
 - Consequences: Ch2 evidence moves from burndowns to the board, cycle time (issue opened to
   merged), a cumulative flow chart from GitLab data and the periodic reviews; Sprint 1 and 2
   records stay as they are, as the evidence for this change. The "Sprint 3" milestone should be
