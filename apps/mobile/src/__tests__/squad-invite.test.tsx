@@ -36,7 +36,7 @@ describe('FR4 #49: invite athletes from the squad screen', () => {
       getIdToken: jest.fn(),
     });
     jest.mocked(Clipboard.setStringAsync).mockResolvedValue(true);
-    shareSpy.mockResolvedValue({ action: Share.sharedAction });
+    shareSpy.mockResolvedValue({ action: Share.sharedAction, activityType: undefined });
   });
 
   describe('AC1: the code is always visible to staff', () => {
