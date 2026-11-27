@@ -23,6 +23,9 @@ export const JoinSquadSchema = z.object({
   inviteCode: z.string().trim().toUpperCase().regex(INVITE_CODE_PATTERN, 'Invalid invite code'),
 });
 
+/** #49: a squad id in a URL. Squad ids are UUIDs, so anything else is rejected before any lookup. */
+export const SquadIdSchema = z.uuid('Invalid squad id');
+
 export type StaffRole = z.infer<typeof StaffRoleSchema>;
 export type CreateSquad = z.infer<typeof CreateSquadSchema>;
 export type JoinSquad = z.infer<typeof JoinSquadSchema>;
