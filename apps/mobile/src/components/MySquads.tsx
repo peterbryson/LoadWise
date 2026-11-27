@@ -23,6 +23,8 @@ interface MySquadsProps {
   onOpenMembers: (squad: MySquad) => void;
   /** #10: staff open the squad overview of athletes' status and flags. */
   onOpenOverview: (squad: MySquad) => void;
+  /** #49: staff open the squad's invite code to copy, share or replace it. Hidden if not given. */
+  onOpenInvite?: (squad: MySquad) => void;
 }
 
 function errorText(error: unknown): string {
@@ -33,7 +35,7 @@ function errorText(error: unknown): string {
  * #2 AC3 and #3: the squads the signed-in user belongs to, with their role in each. For athlete
  * memberships it holds the per-squad "Share my data" switch.
  */
-export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview }: MySquadsProps) {
+export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview, onOpenInvite }: MySquadsProps) {
   const { colors } = useTheme();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
@@ -112,6 +114,14 @@ export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview }: MyS
                     accessibilityHint={`Lists the members of ${squad.squadName}`}
                     onPress={() => onOpenMembers(squad)}
                   />
+                  {onOpenInvite ? (
+                    <Button
+                      label="Invite athletes"
+                      variant="secondary"
+                      accessibilityHint={`Shows the invite code for ${squad.squadName} to copy or share`}
+                      onPress={() => onOpenInvite(squad)}
+                    />
+                  ) : null}
                 </>
               )}
             </Card>
