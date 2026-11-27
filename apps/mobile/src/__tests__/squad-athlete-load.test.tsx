@@ -15,6 +15,8 @@ jest.mock('@/lib/api', () => ({
   createApiClient: () => ({ athleteLoad: mockAthleteLoad }),
 }));
 jest.mock('@/lib/auth', () => ({ useAuth: jest.fn() }));
+// #21's section loads its own data and is tested in injury-restrictions.test.tsx.
+jest.mock('@/components/injuries/InjuryRestrictionsSection', () => ({ InjuryRestrictionsSection: () => null }));
 
 function totals(overrides: Partial<LoadTotals> = {}): LoadTotals {
   return {

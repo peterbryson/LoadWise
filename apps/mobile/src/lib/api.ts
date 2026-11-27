@@ -1,11 +1,15 @@
 import { HEALTH_DATA_NOTICE_VERSION } from '@loadwise/shared';
 import type {
   CreateSquad,
+  InjuryRecord,
   LoadTotals,
   MyLoad,
+  RecordInjury,
+  RecordRestriction,
   SessionLog,
   SquadOverview,
   StaffRole,
+  TrainingRestriction,
   WellnessCheck,
 } from '@loadwise/shared';
 import type { Flag, FlagChecks, WellnessTrendPoint } from '@loadwise/analytics';
@@ -178,7 +182,29 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     myFlags: () => request<CurrentFlags>('GET', '/me/flags'),
     /** #9 AC3: wellness 7-day averages against baseline for the Trends tab. */
     myWellnessTrend: () => request<WellnessTrend>('GET', '/me/wellness-trend'),
+    /** #21: injuries recorded in this squad. Physio only. */
+    athleteInjuries: (squadId: string, athleteId: string) =>
+      request<InjuryRecord[]>('GET', `${athletePath(squadId, athleteId)}/injuries`),
+    /** #21 AC1: a physio records an injury for this athlete in this squad. */
+    recordInjury: (squadId: string, athleteId: string, input: RecordInjury) =>
+      request<InjuryRecord>('POST', `${athletePath(squadId, athleteId)}/injuries`, input),
+    /** #21 AC2: active training restrictions, for every staff role in the squad. */
+    athleteRestrictions: (squadId: string, athleteId: string) =>
+      request<TrainingRestriction[]>('GET', `${athletePath(squadId, athleteId)}/restrictions`),
+    /** #21 AC1: a physio sets a restriction that the squad's coaches will see. */
+    addRestriction: (squadId: string, athleteId: string, input: RecordRestriction) =>
+      request<TrainingRestriction>('POST', `${athletePath(squadId, athleteId)}/restrictions`, input),
+    /** #21: a physio ends a restriction. Repeating it changes nothing. */
+    endRestriction: (squadId: string, athleteId: string, restrictionId: string) =>
+      request<TrainingRestriction>(
+        'POST',
+        `${athletePath(squadId, athleteId)}/restrictions/${encodeURIComponent(restrictionId)}/end`,
+      ),
   };
+}
+
+function athletePath(squadId: string, athleteId: string): string {
+  return `/squads/${encodeURIComponent(squadId)}/athletes/${encodeURIComponent(athleteId)}`;
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>;
