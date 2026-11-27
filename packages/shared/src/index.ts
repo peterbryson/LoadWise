@@ -7,3 +7,4 @@ export * from './schemas/squad';
 export * from './schemas/wellness';
 export * from './schemas/load';
 export * from './schemas/overview';
+export * from './schemas/team-session';

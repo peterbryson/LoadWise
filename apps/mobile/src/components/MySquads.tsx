@@ -1,3 +1,4 @@
+import { TEAM_SESSION_CREATOR_ROLES } from '@loadwise/shared';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Switch, View } from 'react-native';
 import { ApiClient, ApiError, MySquad } from '@/lib/api';
@@ -30,6 +31,8 @@ interface MySquadsProps {
   only?: 'staff' | 'athlete';
   /** #49: staff open the squad's invite code to copy, share or replace it. Hidden if not given. */
   onOpenInvite?: (squad: MySquad) => void;
+  /** #17: coaches and S&C coaches log a team session for the squad. Not shown if left out. */
+  onLogTeamSession?: (squad: MySquad) => void;
 }
 
 const headings = { all: 'My squads', staff: 'Squads I support', athlete: 'My squads' };
@@ -54,6 +57,7 @@ export function MySquads({
   onOpenOverview,
   only,
   onOpenInvite,
+  onLogTeamSession,
 }: MySquadsProps) {
   const filter = only ?? 'all';
   const { colors } = useTheme();
@@ -131,6 +135,14 @@ export function MySquads({
                     accessibilityHint={`Shows each athlete's status and flags in ${squad.squadName}`}
                     onPress={() => onOpenOverview(squad)}
                   />
+                  {onLogTeamSession && TEAM_SESSION_CREATOR_ROLES.includes(squad.role) ? (
+                    <Button
+                      label="Log team session"
+                      variant="secondary"
+                      accessibilityHint={`Logs one session for ${squad.squadName}; each athlete adds their RPE`}
+                      onPress={() => onLogTeamSession(squad)}
+                    />
+                  ) : null}
                   <Button
                     label="View members"
                     variant="secondary"

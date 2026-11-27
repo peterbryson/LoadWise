@@ -41,6 +41,7 @@ function Navigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="sign-in" />
         <Stack.Screen name="setup" />
+        <Stack.Screen name="log-team-session" options={{ presentation: 'modal' }} />
         {/* #48 AC2: the user's own health screens open only with health-data consent, so a
             staff-only user cannot reach them by a link either. The API refuses them too. */}
         <Stack.Protected guard={consent.status === 'given'}>
