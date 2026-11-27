@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ReactElement, ReactNode } from 'react';
+import { Pressable, RefreshControlProps, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/theme';
 import { AppText } from './AppText';
@@ -11,10 +11,13 @@ export const TAB_BAR_SPACE = 96;
 interface ScreenProps {
   children: ReactNode;
   withTabBar?: boolean;
+  /** Optional pull to refresh (#50 AC3). */
+  refreshControl?: ReactElement<RefreshControlProps>;
+  testID?: string;
 }
 
 /** Scrolling page with the design's 20 px sides, 14 px gaps and a phone-width column on web. */
-export function Screen({ children, withTabBar = false }: ScreenProps) {
+export function Screen({ children, withTabBar = false, refreshControl, testID }: ScreenProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   return (
@@ -25,6 +28,8 @@ export function Screen({ children, withTabBar = false }: ScreenProps) {
         { paddingTop: Math.max(insets.top, 20) + 36, paddingBottom: insets.bottom + 20 + (withTabBar ? TAB_BAR_SPACE : 0) },
       ]}
       keyboardShouldPersistTaps="handled"
+      refreshControl={refreshControl}
+      testID={testID}
     >
       {children}
     </ScrollView>
