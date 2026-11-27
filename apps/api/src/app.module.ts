@@ -4,6 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { FlagsModule } from './flags/flags.module';
 import { HttpExceptionFilter } from './common/http-exception.filter';
 import { HealthModule } from './health/health.module';
+import { InjuriesModule } from './injuries/injuries.module';
 import { MeModule } from './me/me.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -30,6 +31,7 @@ import { WellnessModule } from './wellness/wellness.module';
     MetricsModule,
     FlagsModule,
     SquadOverviewModule,
+    InjuriesModule,
   ],
   // APP_FILTER applies the filter to every route, so all errors share one shape (#27).
   providers: [{ provide: APP_FILTER, useClass: HttpExceptionFilter }],

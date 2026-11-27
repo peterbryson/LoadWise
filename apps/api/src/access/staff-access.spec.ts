@@ -6,6 +6,7 @@ import request from 'supertest';
 import { AppModule } from '../app.module';
 import { TOKEN_VERIFIER, TokenVerifier } from '../auth/token-verifier';
 import { PrismaService } from '../prisma/prisma.service';
+import { InjuriesController } from '../injuries/injuries.controller';
 import { SquadAthletesController } from '../squad-athletes/squad-athletes.controller';
 import { STAFF_ACCESS_CATEGORY_KEY } from './staff-access.guard';
 
@@ -91,6 +92,7 @@ const prisma = {
   },
   wellnessEntry: { findMany: jest.fn() },
   injury: { findMany: jest.fn(), create: jest.fn() },
+  restriction: { findMany: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
   session: { findMany: jest.fn() },
 };
 // Added after the object exists, as the callback receives the fake client itself.
@@ -136,6 +138,7 @@ async function withdraw(token: string, share = false) {
 }
 
 const VALID_INJURY = { bodyArea: 'Left hamstring', onsetDate: '2026-11-10' };
+const VALID_RESTRICTION = { description: 'No contact training' };
 
 interface Endpoint {
   name: string;
@@ -189,6 +192,33 @@ const ENDPOINTS: Endpoint[] = [
         .send(VALID_INJURY),
     dataQuery: () => prisma.injury.create,
   },
+  {
+    name: 'GET restrictions',
+    category: 'RESTRICTIONS',
+    okStatus: 200,
+    call: (athleteId, headers) =>
+      request(app.getHttpServer()).get(`/squads/${SQUAD_A}/athletes/${athleteId}/restrictions`).set(headers),
+    dataQuery: () => prisma.restriction.findMany,
+  },
+  {
+    name: 'POST restrictions',
+    category: 'INJURY',
+    okStatus: 201,
+    call: (athleteId, headers) =>
+      request(app.getHttpServer())
+        .post(`/squads/${SQUAD_A}/athletes/${athleteId}/restrictions`)
+        .set(headers)
+        .send(VALID_RESTRICTION),
+    dataQuery: () => prisma.restriction.create,
+  },
+  {
+    name: 'POST restrictions/:id/end',
+    category: 'INJURY',
+    okStatus: 200,
+    call: (athleteId, headers) =>
+      request(app.getHttpServer()).post(`/squads/${SQUAD_A}/athletes/${athleteId}/restrictions/res-1/end`).set(headers),
+    dataQuery: () => prisma.restriction.findFirst,
+  },
 ];
 
 /** Hand-written from Peter's #11 matrix, independent of the policy code under test. */
@@ -198,6 +228,7 @@ const ALLOWED_ROLES: Record<DataCategory, SquadRole[]> = {
   FLAGS: ['COACH', 'SC_COACH', 'PHYSIO'],
   WELLNESS_STATUS: ['COACH', 'SC_COACH', 'PHYSIO'],
   WELLNESS_SCORES: ['SC_COACH', 'PHYSIO'],
+  RESTRICTIONS: ['COACH', 'SC_COACH', 'PHYSIO'],
   INJURY: ['PHYSIO'],
 };
 
@@ -268,6 +299,17 @@ describe('NFR2: role-based access (#11 AC3)', () => {
     ]);
     prisma.injury.findMany.mockResolvedValue([]);
     prisma.session.findMany.mockResolvedValue([]);
+    const restriction = {
+      id: 'res-1',
+      description: 'No contact training',
+      reviewOn: null,
+      endedAt: null,
+      createdAt: new Date('2026-11-27T10:00:00Z'),
+    };
+    prisma.restriction.findMany.mockResolvedValue([]);
+    prisma.restriction.findFirst.mockResolvedValue(restriction);
+    prisma.restriction.create.mockResolvedValue(restriction);
+    prisma.restriction.update.mockResolvedValue({ ...restriction, endedAt: new Date('2026-11-27T11:00:00Z') });
     prisma.injury.create.mockImplementation(({ data }: { data: Record<string, unknown> }) =>
       Promise.resolve({ id: 'inj-1', ...data }),
     );
@@ -284,7 +326,7 @@ describe('NFR2: role-based access (#11 AC3)', () => {
       if (expected === endpoint.okStatus) {
         expect(endpoint.dataQuery()).toHaveBeenCalledTimes(1);
         expect(endpoint.dataQuery().mock.calls[0][0]).toMatchObject(
-          endpoint.name === 'POST injuries'
+          endpoint.name === 'POST injuries' || endpoint.name === 'POST restrictions'
             ? { data: { athleteId: scenario.athleteId } }
             : { where: { athleteId: scenario.athleteId } },
         );
@@ -415,16 +457,14 @@ describe('NFR2: role-based access (#11 AC3)', () => {
     });
   });
 
-  describe('every route on the staff athlete controller is protected', () => {
-    it('declares a data category on each handler', () => {
+  describe('every route on the staff athlete controllers is protected', () => {
+    it.each([SquadAthletesController, InjuriesController])('declares a data category on each handler of %p', (controller) => {
       const reflector = new Reflector();
-      const handlers = Object.getOwnPropertyNames(SquadAthletesController.prototype).filter(
-        (name) => name !== 'constructor',
-      );
+      const prototype = controller.prototype as unknown as Record<string, () => unknown>;
+      const handlers = Object.getOwnPropertyNames(prototype).filter((name) => name !== 'constructor');
       expect(handlers.length).toBeGreaterThan(0);
       for (const name of handlers) {
-        const handler = SquadAthletesController.prototype[name as keyof SquadAthletesController];
-        expect([name, reflector.get(STAFF_ACCESS_CATEGORY_KEY, handler)]).toEqual([name, expect.any(String)]);
+        expect([name, reflector.get(STAFF_ACCESS_CATEGORY_KEY, prototype[name])]).toEqual([name, expect.any(String)]);
       }
     });
   });
