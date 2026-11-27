@@ -23,6 +23,7 @@ jest.mock('@/lib/api', () => ({
   }),
 }));
 jest.mock('@/lib/auth', () => ({ useAuth: jest.fn() }));
+jest.mock('@/components/injuries/InjuryRestrictionsSection', () => ({ InjuryRestrictionsSection: () => null }));
 
 const totals: LoadTotals = {
   today: '2026-11-25',
