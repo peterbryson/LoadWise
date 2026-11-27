@@ -9,6 +9,7 @@ export const dataCategoryLabels: Record<DataCategory, string> = {
   FLAGS: 'flags and their reasons',
   WELLNESS_STATUS: 'whether your wellness is below your usual',
   WELLNESS_SCORES: 'your wellness scores',
+  RESTRICTIONS: 'training restrictions set by the physio',
   INJURY: 'injury records',
 };
 

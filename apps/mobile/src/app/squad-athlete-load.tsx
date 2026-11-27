@@ -8,6 +8,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { InlineMessage } from '@/components/InlineMessage';
+import { InjuryRestrictionsSection } from '@/components/injuries/InjuryRestrictionsSection';
 import { AcwrCard, WeeklyLoadCard } from '@/components/LoadTrends';
 import { NavHeader, Screen } from '@/components/Screen';
 import { ApiError, apiBaseUrl, createApiClient } from '@/lib/api';
@@ -103,6 +104,7 @@ export default function SquadAthleteLoadScreen() {
       {state.kind === 'loaded' ? (
         <RoleDetailSections api={api} squadId={squadId} athleteId={athleteId} athleteName={athleteName} />
       ) : null}
+      <InjuryRestrictionsSection squadId={squadId} athleteId={athleteId} />
     </Screen>
   );
 }
