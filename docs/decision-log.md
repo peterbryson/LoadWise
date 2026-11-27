@@ -18,6 +18,207 @@ Template:
 
 ---
 
+## DL-032: Build the coach-flow stories in parallel, one agent and one merge request each, with a throwaway integration branch
+
+- Date: 27 Nov 2026
+- Status: Proposed (Peter asked for several agents to build stories 1 to 6 of the coach flow at the same time; set up by Claude Code)
+- Context: after the MVP, Peter wanted a fully working coach-flow prototype quickly, to judge it,
+  while keeping the rule that he reviews and merges every merge request himself, one story each.
+  Six stories (#48, #49, #50, #51, #17, #21) touch shared files (the mobile API client, `MySquads`,
+  the athlete screen, the Prisma schema), so parallel branches conflict.
+- Options considered:
+  - **Build them one after another on `main`.** No conflicts, but days of elapsed time.
+  - **Stack the branches** (each on the previous one). Fewer conflicts, but each merge request then
+    shows other stories' changes and has to be merged in a fixed order.
+  - **Parallel branches from the same `main` commit, each in its own git worktree and its own local
+    database, plus a `prototype/coach-flow` branch that merges all six (chosen).** Each merge request
+    shows one story only; conflicts are found and resolved once on the prototype branch, which shows
+    how to resolve them when the merge requests land; records are drafted by the agents and added on
+    one docs branch, as in the Sprint 2 lesson.
+- Decision: chosen as above. Agents may push and open merge requests but never merge. Fixed
+  migration timestamps (`20261127130000` for #17, `20261127140000` for #21) keep migrations ordered.
+  `prototype/coach-flow` is for running the prototype only and is never merged.
+- Consequences: conflicts in `MySquads.tsx`, `profile.tsx`, `_layout.tsx`, `api.ts`, `schema.prisma`,
+  `app.module.ts` and `squad-athlete-load.tsx` must be resolved again as each merge request lands
+  (I-45). Six agents on the laptop at once caused CI test timeouts (I-18) and slower measurements
+  (#50 AC4). Much more AI-written code arrives at once, which raises R16: each merge request still
+  needs Peter's line-by-line review.
+
+---
+
+## DL-031: Injury scope and training restrictions for coaches (#21, settles I-14)
+
+- Date: 27 Nov 2026
+- Status: Proposed (drafted by Claude Code; Peter to accept)
+- Context: #21 needs a physio to record injuries and return-to-play restrictions so coaches can plan
+  around them, while #11 AC1 says coaches never see injury records (DL-022). I-14: injuries belonged to
+  the athlete, so a physio in squad C could read notes written by squad A's physio.
+- Options considered:
+  - Scope: *athlete-wide* (as before; better continuity of care, but sharing with squad C silently
+    discloses what squad A wrote), or **scoped to the recording squad (`squadId`, new migration,
+    chosen)**: matches per-squad consent (DL-002) and data minimisation.
+  - How coaches see restrictions: extra columns on Injury with a coach-only `select` (one mistake in a
+    select would expose clinical fields), or **a separate Restriction table with no link to Injury,
+    read through a new `RESTRICTIONS` category (chosen)**: no coach query touches Injury.
+  - Who writes restrictions: a new "manage" category, or **the existing `INJURY` category (chosen)**:
+    only the role that may see the injury decides the restriction.
+  - Ending: delete, or **set `endedAt` and stop listing it (chosen)**, keeping history.
+- Decision: `Injury.squadId` (nullable; rows from before #21 are returned to no squad, fail closed).
+  New `Restriction` (athleteId, squadId, recordedById, description 3 to 120 characters, optional
+  reviewOn, endedAt). `RESTRICTIONS` visible to COACH, SC_COACH and PHYSIO; writes need `INJURY`
+  (physio only). Every route uses StaffAccessGuard, so consent withdrawal applies on the next
+  request. Ending is idempotent; another squad's or athlete's id gives 404. A physio sets and ends
+  restrictions; LoadWise never suggests, sets or ends one, and the review date triggers nothing.
+- Consequences: the athlete's sharing text now lists "training restrictions set by the physio" for
+  every staff role; a physio in each squad keeps their own records; showing restrictions across
+  squads would need an athlete opt-in; no view of ended restrictions and no record of who ended one;
+  real-database tests still missing (I-2).
+
+---
+
+## DL-030: Team sessions: one squad row, athlete sessions created only when they add their RPE (#17)
+
+- Date: 27 Nov 2026
+- Status: Proposed (drafted by Claude Code while building #17; Peter to accept)
+- Context: #17 lets a coach log a session once for the squad so athletes only add their RPE.
+  DL-002 makes health data the athlete's, and session load is never stored. The question is
+  where the coach's entry lives and when an athlete's session exists.
+- Options considered:
+  - **Pre-create a Session row per athlete when the coach logs it.** One query for "to rate", but it
+    writes health-shaped rows for athletes who did not train, needs a nullable or placeholder RPE,
+    and half-filled rows would reach load metrics and staff views.
+  - **A TeamSession table (squad, type, date, duration, created by), with the athlete's Session created
+    only when they add their RPE and linked by `teamSessionId` (chosen).** Nothing stored for athletes
+    who did not train; Session keeps its NOT NULL RPE; load metrics need no change.
+  - Who may create: any staff role, or **COACH and SC_COACH only (chosen)**; a physio's role is individual care.
+- Decision:
+  - Data: new `TeamSession` model; `Session.teamSessionId` nullable with a unique index on
+    (athleteId, teamSessionId), so each athlete rates once (409); NULLs are distinct, so personal
+    sessions are unaffected. The rating copies type, date and duration and keeps squadId. Deleting a
+    team session sets the link to null; deleting the creator sets `createdById` to null.
+  - Roles: `TEAM_SESSION_CREATOR_ROLES = ['COACH', 'SC_COACH']` in `@loadwise/shared`; non-member 404,
+    athlete or physio 403.
+  - Rating window: athletes asked for 7 days counting the session date, only about sessions dated on or
+    after the day they joined. Coaches log for today or up to 6 days back.
+  - Consent: rating needs health-data consent (DL-008) but not squad-sharing consent (own data); staff
+    see results only through consent-checked endpoints (DL-022).
+  - Offline: optional `clientId` with DL-023 replay rules; not in the #6 queue; the Today card stays
+    until saved.
+  - Entry: pick an RPE, then Save (two taps), because a rating cannot be edited.
+- Consequences: no dismiss for athletes who did not attend (prompt expires after 7 days); athletes
+  cannot change the duration (I-39); creating a team session has no idempotency key (I-38); not tested
+  against real PostgreSQL (I-2); migration `20261127130000_team_sessions`.
+
+---
+
+## DL-029: Athlete detail requests sections by the viewer's role, from the shared matrix (#51)
+
+- Date: 27 Nov 2026
+- Status: Proposed (chosen by Claude Code while building #51; Peter to accept)
+- Context: #51 adds monotony and strain (LOAD_DETAIL) and wellness scores (WELLNESS_SCORES) to the staff
+  view of an athlete. AC3 says a coach's screen must never request those routes, so the app has to
+  know the viewer's role before requesting. The API stays the authority (DL-022).
+- Options considered:
+  - **Request every route and hide what returns 403.** Simple, but a coach's screen would call routes
+    it may not see, which breaks AC3 and adds pointless requests.
+  - **A role field on the load response.** Would change a tested API contract for a UI concern.
+  - **Read the role from `GET /squads` and mount a section only if `STAFF_DATA_ACCESS` allows its
+    category (chosen).** No API change, and the app uses the same matrix the server enforces.
+- Decision: `useViewerRole` plus `viewerCanSee`, failing closed for an unknown role or a failed lookup;
+  sections load only after the combined load succeeds, so withdrawn consent shows one refusal; each
+  section handles its own 403, offline and error states; the latest 7 of 28 check-ins are shown;
+  sections are separate components so later stories (#21 injuries) add one with a small diff.
+- Consequences: one extra `GET /squads` request per staff view of an athlete; a role change between
+  lookup and request shows as a 403 refusal, not hidden data; S&C coaches see wellness scores,
+  following DL-022 rather than #51's wording (see requirements-changes).
+
+## Requirements change
+| 27 Nov 2026 | #51 AC2 | AC2 says "coaches and S&C coaches see neither the scores nor a link to them". DL-022 and `STAFF_DATA_ACCESS` give S&C coaches WELLNESS_SCORES, and the API serves them. The screen follows the server: physios and S&C coaches see recent wellness scores; coaches see neither the scores nor a link. Reword AC2, or change DL-022 and the matrix if S&C coaches should not see scores. | TODO: Peter to confirm (built to DL-022 by Claude Code) |
+
+---
+
+## DL-028: What "logged today" means in the squad overview, and who may see it (#50)
+
+- Date: 27 Nov 2026
+- Status: Proposed (chosen by Claude Code while building #50; Peter to accept or change)
+- Context: #50 asks the overview to show whether each consenting athlete has done today's wellness
+  check and the date of their last session, with a "not logged today" filter. DL-022 gives a coach
+  wellness status only, and DL-024 keeps wellness scores from coaches. NFR 3.1 must still hold.
+- Options considered:
+  - Meaning of "logged today": no check-in and no session (a rest day would count as not logged), or
+    **no wellness check-in today (chosen)**: the check-in is the one log expected every day.
+  - Who sees it: hide from coaches, or **a yes/no for every staff role (chosen)**: status, not a score,
+    so it fits DL-022's "wellness status" for coaches and keeps DL-024.
+  - Last session date: this squad's sessions only, or **the latest session from any squad (chosen)**,
+    the same combined data as #8.
+  - Derivation: extra queries, or **pure `loggingStatus()` in @loadwise/analytics over the rows the
+    overview already reads (chosen)**, `today` passed in.
+  - Filtering: an API query parameter, or **on the phone (chosen)**: at most about 40 athletes.
+  - "Last updated": phone receipt time, or **`generatedAt` from the API clock (chosen)**.
+  - Refresh failure: always keep the old list, or **keep it only for no signal or 5xx, clear it for any
+    4xx (chosen)**, so a viewer removed from the squad does not keep seeing athlete data.
+- Decision: as chosen above. Athletes who do not share have no `logging` field and appear only under
+  "All". Check-ins or sessions dated after today are ignored.
+- Consequences: the last session date reveals when the athlete last trained in any squad (not which);
+  Peter to confirm under DL-022. A check-in dated "tomorrow" by a phone outside the UK is not counted
+  (I-21). NFR 3.1 measured locally under load: 1 of 3 runs missed the 2 s concurrent target
+  (2373 ms), so it needs re-measuring (I-34).
+
+---
+
+## DL-027: Who can read and replace a squad's invite code (#49)
+
+- Date: 27 Nov 2026
+- Status: Proposed (drafted by Claude Code; Peter to accept)
+- Context: #49 lets staff find and share the invite code at any time and lets "a coach" replace it
+  so the old code stops joining. DL-004 keeps invite codes granting the ATHLETE role only. Squads
+  have no creator column, and staff roles are self-declared (I-15).
+- Options considered:
+  - Who replaces: any staff (simplest, but a physio or S&C coach could lock new athletes out);
+    only the creator (needs a `createdById` column and migration, breaks if the creator leaves);
+    **any member with the COACH role in the squad (chosen)**: matches the criterion, no schema change.
+  - How the app reads the code: reuse `GET /squads`, or **a dedicated `GET /squads/:squadId/invite-code`
+    (chosen)** so AC4 is enforced and tested on the route that returns the code.
+  - Replace response: 201, or **200 (chosen)**, as it changes a property of an existing squad.
+- Decision: any staff of the squad reads the code; only a COACH replaces it. Non-members 404 (DL-022),
+  athletes 403, other staff 403 on replace. New code from `generateInviteCode()`, collisions retried up
+  to 3 times as on create. Joining still always grants ATHLETE. `:squadId` validated as a UUID
+  (shared `SquadIdSchema`). Copy uses `expo-clipboard` (Expo SDK 58; RN core has no clipboard);
+  share uses React Native `Share`, with a "copy instead" message where there is no share sheet.
+- Consequences: replacing the code does not remove existing members; a squad with no COACH cannot
+  replace its code (I-32); the new code could in theory equal the old one (about 1 in 8.5x10^11),
+  not guarded; not tested against real PostgreSQL (I-2).
+
+---
+
+## DL-026: Health-data consent belongs to logging your own data; entry mode is derived (#48)
+
+- Date: 27 Nov 2026
+- Status: Proposed (drafted by Claude Code while building #48; Peter to accept)
+- Context: #48 lets coaches, physios and S&C coaches use LoadWise without giving health-data consent
+  (DL-008) they do not need, while a player-coach is both. Until now every user without consent was
+  sent to setup, which required the consent box.
+- Options considered:
+  - Where consent applies: every account (as before), or **only to logging your own health data
+    (chosen)**. Staff access is governed by the athlete's per-squad consent (DL-021, DL-022). No staff
+    route ever checked the caller's own consent; a new API spec pins this down.
+  - How "staff-only" is known: a stored preference (e.g. `User.usesLoadWiseAs`) with a migration and
+    `PUT /me` (lets staff finish setup before creating a squad, but a second source of truth that can
+    disagree with consent and memberships), or **derived from health-data consent plus "has at least
+    one staff membership" (chosen)**, both already returned by `GET /me` and `GET /squads`.
+  - Blocking health screens in the app: a wrapper in each screen, or **`Stack.Protected` in the root
+    layout plus a tab redirect (chosen)**: one place, covers deep links. The API's
+    `@RequiresHealthConsent()` stays the real protection.
+- Decision: `lib/entry.ts` maps (consent, staff membership) to setup / athlete / staff / both.
+  Staff-only users see Squad and Profile and land on Squad; athletes land on Today; users who are both
+  see all four tabs and land on Today. A staff-only user finishes setup by creating their first squad
+  and can later add logging from Profile, which asks for consent first.
+- Consequences: no migration; staff cannot finish setup by joining an existing squad as staff (invite
+  codes grant ATHLETE only, I-15); app start makes two API calls (`/me`, `/squads`); the Squad tab is
+  not in Figma V1.
+
+---
+
 ## DL-025: Gather user requirements with an online form instead of interviews
 
 - Date: 26 Nov 2026
