@@ -1,34 +1,39 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { TabRoute } from '@/lib/entry';
 import { useTheme } from '@/theme/theme';
 import { AppText } from './AppText';
 import { Icon, IconName } from './Icon';
 
-export type TabRoute = 'index' | 'trends' | 'profile';
+export type { TabRoute };
 
-const tabs: { route: TabRoute; label: string; icon: 'today' | 'trends' | 'profile' }[] = [
+const tabs: { route: TabRoute; label: string; icon: 'today' | 'trends' | 'squad' | 'profile' }[] = [
   { route: 'index', label: 'Today', icon: 'today' },
   { route: 'trends', label: 'Trends', icon: 'trends' },
+  { route: 'squad', label: 'Squad', icon: 'squad' },
   { route: 'profile', label: 'Profile', icon: 'profile' },
 ];
 
 interface TabBarProps {
   active: TabRoute;
+  /** #48: the tabs this user may open (`tabsFor` in `lib/entry.ts`), in tab-bar order. */
+  visible: TabRoute[];
   onSelect: (route: TabRoute) => void;
 }
 
 /**
- * The Figma "Tab Bar": three tabs in a pill, with the AI assistant button beside it. The
- * assistant is a later story (#12, #13, #15), so the button is shown but disabled.
+ * The Figma "Tab Bar": the tabs in a pill, with the AI assistant button beside it. The Figma
+ * design has three tabs; #48 adds a Squad tab for staff, which is not in Figma V1. The assistant
+ * is a later story (#12, #13, #15), so the button is shown but disabled.
  */
-export function TabBar({ active, onSelect }: TabBarProps) {
+export function TabBar({ active, visible, onSelect }: TabBarProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.wrapper, { bottom: insets.bottom + 14 }]} pointerEvents="box-none">
       <View style={styles.bar}>
         <View style={[styles.tabs, { backgroundColor: colors.surfaceRaised }]} accessibilityRole="tablist">
-          {tabs.map((tab) => {
+          {tabs.filter((tab) => visible.includes(tab.route)).map((tab) => {
             const selected = tab.route === active;
             const icon = `${tab.icon}-${selected ? 'active' : 'inactive'}` as IconName;
             return (
