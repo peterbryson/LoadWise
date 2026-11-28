@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
+import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { ListGroup, ListRow } from '@/components/ListRow';
@@ -30,22 +31,17 @@ export default function ProfileScreen() {
   const { user, signOut, getIdToken } = useAuth();
   const { status, hasStaffSquad, markStaffSquad } = useConsent();
   const logsOwnTraining = status === 'given';
-  const { colors, preference, setPreference } = useTheme();
+  const { preference, setPreference } = useTheme();
   const api = useMemo(() => createApiClient({ baseUrl: apiBaseUrl, getIdToken }), [getIdToken]);
   const [squadsVersion, setSquadsVersion] = useState(0);
 
   const email = user?.email ?? '';
   const name = user?.displayName || email.split('@')[0];
-  const initials = name.slice(0, 2).toUpperCase();
 
   return (
     <Screen withTabBar>
       <View style={styles.person}>
-        <View style={[styles.avatar, { backgroundColor: colors.accentTint }]}>
-          <AppText variant="heading" color="accent">
-            {initials}
-          </AppText>
-        </View>
+        <Avatar name={name} size={56} />
         <View style={styles.flex}>
           <AppText variant="title" accessibilityRole="header">
             {name}
@@ -110,9 +106,9 @@ export default function ProfileScreen() {
       )}
 
       <Card gap={10}>
-        <AppText variant="heading">Preview tools</AppText>
+        <AppText variant="heading">Appearance</AppText>
         <AppText variant="caption" color="textMuted">
-          For viewing the design on localhost. Not part of the Figma V1 screens.
+          Follow the phone's setting, or choose light or dark.
         </AppText>
         <OptionRow
           options={themes}
@@ -135,6 +131,5 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   person: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   flex: { flex: 1, gap: 2 },
 });
