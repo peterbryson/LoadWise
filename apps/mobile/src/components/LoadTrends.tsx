@@ -181,7 +181,7 @@ export function AcwrCard({ acwr, today, availableFrom, whose = 'your' }: AcwrCar
     <Card>
       <View style={styles.titleRow}>
         <AppText variant="heading">Load ratio (ACWR)</AppText>
-        {acwr.value === null ? null : <AppText variant="heading">{acwr.value.toFixed(2)}</AppText>}
+        {acwr.value === null ? null : <AppText variant="metric">{acwr.value.toFixed(2)}</AppText>}
       </View>
       <AppText variant="body">{acwrSentence(acwr.value, whose)}</AppText>
       <AppText variant="caption" color="textMuted">
@@ -258,5 +258,5 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   bars: { flexDirection: 'row', gap: 4, alignItems: 'flex-end' },
   week: { flex: 1, height: 120, alignItems: 'center', justifyContent: 'flex-end', gap: 4 },
-  bar: { alignSelf: 'stretch', marginHorizontal: 4, borderTopLeftRadius: 6, borderTopRightRadius: 6 },
+  bar: { alignSelf: 'stretch', marginHorizontal: 5, borderRadius: 4 },
 });

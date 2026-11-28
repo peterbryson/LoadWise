@@ -27,18 +27,18 @@ export function FlagStatusCard() {
         {state.data.flags.map((flag) => (
           <Card key={`${flag.rule}-${flag.metric}`} tone="warning">
             <View style={styles.flagTitle}>
-              <Icon name="alert-warning-24" size={24} />
+              <Icon name="alert-warning-24" size={20} />
               <AppText variant="heading" style={styles.flex}>
                 {flagTitle(flag)}
               </AppText>
             </View>
-            <AppText variant="caption">{flag.reason}</AppText>
+            <AppText variant="body">{flag.reason}</AppText>
             <Link href="/flag" asChild>
               <Pressable accessibilityRole="link" accessibilityLabel={`See why: ${flagTitle(flag)}`} style={styles.seeWhy}>
                 <AppText variant="label" color="warning">
                   See why
                 </AppText>
-                <Icon name="chevron-warning" size={20} />
+                <Icon name="chevron-warning" size={18} />
               </Pressable>
             </Link>
           </Card>

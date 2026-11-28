@@ -1,9 +1,9 @@
 import { WellnessCheckSchema } from '@loadwise/shared';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { InlineMessage } from '@/components/InlineMessage';
 import { OptionRow } from '@/components/Option';
 import { NavHeader, Screen } from '@/components/Screen';
@@ -37,6 +37,7 @@ export default function WellnessScreen() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [queued, setQueued] = useState(false);
+  const answered = items.filter((item) => answers[item.key] !== undefined).length;
 
   async function save() {
     const result = WellnessCheckSchema.safeParse({ date: localIsoDate(new Date()), ...answers });
@@ -64,8 +65,12 @@ export default function WellnessScreen() {
     <Screen>
       <NavHeader title="Morning check-in" icon="close" onPress={() => router.back()} />
 
+      <AppText variant="caption" color="textMuted">
+        {`${answered} of ${items.length} answered · 1 is worst, 5 is best`}
+      </AppText>
+
       {items.map((item) => (
-        <View key={item.key} style={styles.item}>
+        <Card key={item.key} gap={12}>
           <AppText variant="heading">{item.label}</AppText>
           <OptionRow
             options={scores}
@@ -74,19 +79,12 @@ export default function WellnessScreen() {
               setAnswers((current) => ({ ...current, [item.key]: value }));
             }}
             accessibilityLabel={`${item.label}, 1 is ${item.low}, 5 is ${item.high}`}
+            anchors={[item.low, item.high]}
           />
-          <View style={styles.labels}>
-            <AppText variant="caption" color="textMuted">
-              {item.low}
-            </AppText>
-            <AppText variant="caption" color="textMuted">
-              {item.high}
-            </AppText>
-          </View>
-        </View>
+        </Card>
       ))}
 
-      <InlineMessage kind="info" text="In pain or injured? Speak to a physio or GP." />
+      <InlineMessage kind="info" boxed text="In pain or injured? Speak to a physio or GP." />
       {error ? <InlineMessage kind="error" text={error} /> : null}
 
       {queued ? (
@@ -101,7 +99,3 @@ export default function WellnessScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  item: { gap: 6 },
-  labels: { flexDirection: 'row', justifyContent: 'space-between' },
-});
