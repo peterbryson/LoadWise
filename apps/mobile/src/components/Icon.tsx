@@ -92,6 +92,14 @@ const icons = {
     light: require('../../assets/icons/light/profile-inactive.svg'),
     dark: require('../../assets/icons/dark/profile-inactive.svg'),
   },
+  'squad-active': {
+    light: require('../../assets/icons/light/squad-active.svg'),
+    dark: require('../../assets/icons/dark/squad-active.svg'),
+  },
+  'squad-inactive': {
+    light: require('../../assets/icons/light/squad-inactive.svg'),
+    dark: require('../../assets/icons/dark/squad-inactive.svg'),
+  },
   ai: {
     light: require('../../assets/icons/light/ai.svg'),
     dark: require('../../assets/icons/dark/ai.svg'),
