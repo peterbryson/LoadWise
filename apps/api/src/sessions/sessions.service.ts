@@ -29,7 +29,8 @@ interface SessionRow {
   clientId: string | null;
 }
 
-function toSaved(row: SessionRow): SavedSession {
+/** Also used by #17, whose ratings are saved as the athlete's own sessions. */
+export function toSaved(row: SessionRow): SavedSession {
   return {
     id: row.id,
     type: row.type,
