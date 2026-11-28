@@ -45,6 +45,8 @@ function checkIn(athleteId: string, daysBefore: number, sleep: number, other = 4
  * - Clear: the same steady load and 15 check-ins of all 4s, then all 4s today: both checks run, nothing fires.
  * - New: nothing logged yet, so neither check can run.
  * - Private: has data but does not share with this squad, so none of it may be read.
+ * - Lapsed (#50): steady load until 3 days ago (22 Nov), then nothing; one check-in, yesterday. Not
+ *   enough check-ins for a baseline, so incomplete; with 3 zero days the ACWR falls, so no load flag.
  */
 const SESSIONS: SessionRow[] = [
   ...dailySessions('ath-spike', 49, 7, 4, 30),
@@ -52,6 +54,7 @@ const SESSIONS: SessionRow[] = [
   ...dailySessions('ath-sleep', 41, 0, 4, 30),
   ...dailySessions('ath-clear', 41, 0, 4, 30),
   ...dailySessions('ath-private', 41, 0, 8, 90),
+  ...dailySessions('ath-lapsed', 41, 3, 4, 30),
 ];
 const CHECK_INS: CheckInRow[] = [
   ...[1, 2, 3, 4, 5, 6, 7].map((d) => checkIn('ath-sleep', d, 3)),
@@ -61,6 +64,7 @@ const CHECK_INS: CheckInRow[] = [
   ...Array.from({ length: 15 }, (_, i) => checkIn('ath-clear', i + 1, 4)),
   checkIn('ath-clear', 0, 4),
   checkIn('ath-private', 0, 1, 1),
+  checkIn('ath-lapsed', 1, 4),
 ];
 
 interface Member { userId: string; displayName: string; role: SquadRole; consentGiven: boolean }
@@ -73,6 +77,7 @@ function seedMembers() {
     { userId: 'ath-sleep', displayName: 'Sleep Athlete', role: 'ATHLETE', consentGiven: true },
     { userId: 'ath-clear', displayName: 'Clear Athlete', role: 'ATHLETE', consentGiven: true },
     { userId: 'ath-new', displayName: 'New Athlete', role: 'ATHLETE', consentGiven: true },
+    { userId: 'ath-lapsed', displayName: 'Lapsed Athlete', role: 'ATHLETE', consentGiven: true },
     { userId: 'ath-private', displayName: 'Private Athlete', role: 'ATHLETE', consentGiven: false },
     { userId: 'colleague', displayName: 'Other Coach', role: 'PHYSIO', consentGiven: false },
   ];
@@ -179,6 +184,7 @@ describe('FR4: squad overview (#10)', () => {
       ])).toEqual([
         ['Sleep Athlete', 'flagged'],
         ['Spike Athlete', 'flagged'],
+        ['Lapsed Athlete', 'incomplete'],
         ['New Athlete', 'incomplete'],
         ['Clear Athlete', 'clear'],
         ['Private Athlete', 'not sharing'],
@@ -237,6 +243,7 @@ describe('FR4: squad overview (#10)', () => {
         status: 'incomplete',
         flags: [],
         checks: { acwr: 'unavailable', wellness: 'no-baseline' },
+        logging: { checkedInToday: false, lastSessionDate: null },
         load: { thisWeek: 0, usualWeek: null, acwr: null },
       });
     });
@@ -280,6 +287,58 @@ describe('FR4: squad overview (#10)', () => {
         usualWeek: ownLoad.body.usualWeek,
         acwr: ownLoad.body.acwr.value,
       });
+    });
+  });
+
+  describe('FR4 #50: who has logged today', () => {
+    const loggingOf = (body: { athletes: { athleteId: string; logging?: unknown }[] }) =>
+      Object.fromEntries(body.athletes.map((a) => [a.athleteId, a.logging]));
+
+    it('AC1: shows each sharing athlete’s check-in today and the date of their last session', async () => {
+      const res = await get().expect(200);
+
+      expect(loggingOf(res.body)).toEqual({
+        'ath-sleep': { checkedInToday: true, lastSessionDate: TODAY },
+        'ath-spike': { checkedInToday: false, lastSessionDate: TODAY },
+        'ath-lapsed': { checkedInToday: false, lastSessionDate: '2026-11-22' },
+        'ath-new': { checkedInToday: false, lastSessionDate: null },
+        'ath-clear': { checkedInToday: true, lastSessionDate: TODAY },
+        'ath-private': undefined,
+      });
+    });
+
+    it.each(['COACH', 'SC_COACH', 'PHYSIO'] as const)(
+      'AC1: gives a %s the same yes/no and date, with no wellness scores in it (DL-022)',
+      async (role) => {
+        viewerRole = role;
+        const res = await get().expect(200);
+        const sleep = res.body.athletes.find((a: { athleteId: string }) => a.athleteId === 'ath-sleep');
+
+        expect(sleep.logging).toEqual({ checkedInToday: true, lastSessionDate: TODAY });
+      },
+    );
+
+    it('AC3: says when the overview was built, from the API’s clock', async () => {
+      const res = await get().expect(200);
+
+      expect(res.body.generatedAt).toBe(NOW.toISOString());
+    });
+
+    it('shows no logging data for an athlete who does not share, though they logged today', async () => {
+      const res = await get().expect(200);
+      const hidden = res.body.athletes.find((a: { athleteId: string }) => a.athleteId === 'ath-private');
+
+      expect(hidden).not.toHaveProperty('logging');
+      expect(hidden).toEqual({ athleteId: 'ath-private', displayName: 'Private Athlete', sharing: false });
+    });
+
+    it('drops an athlete’s logging data on the next request after they stop sharing (#3 AC3)', async () => {
+      const before = await get().expect(200);
+      expect(loggingOf(before.body)['ath-sleep']).toBeDefined();
+      members.find((m) => m.userId === 'ath-sleep')!.consentGiven = false;
+
+      const after = await get().expect(200);
+      expect(loggingOf(after.body)['ath-sleep']).toBeUndefined();
     });
   });
 
@@ -329,11 +388,11 @@ describe('FR4: squad overview (#10)', () => {
       expect(prisma.session.findMany).toHaveBeenCalledTimes(1);
       expect(prisma.wellnessEntry.findMany).toHaveBeenCalledTimes(1);
       expect(prisma.session.findMany.mock.calls[0][0].where).toEqual({
-        athleteId: { in: ['ath-spike', 'ath-sleep', 'ath-clear', 'ath-new'] },
+        athleteId: { in: ['ath-spike', 'ath-sleep', 'ath-clear', 'ath-new', 'ath-lapsed'] },
         date: { lte: new Date(TODAY) },
       });
       expect(prisma.wellnessEntry.findMany.mock.calls[0][0].where).toEqual({
-        athleteId: { in: ['ath-spike', 'ath-sleep', 'ath-clear', 'ath-new'] },
+        athleteId: { in: ['ath-spike', 'ath-sleep', 'ath-clear', 'ath-new', 'ath-lapsed'] },
         date: { gte: new Date('2026-10-28'), lte: new Date(TODAY) },
       });
     });

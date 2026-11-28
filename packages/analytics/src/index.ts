@@ -2,6 +2,8 @@ export { ACUTE_DAYS, ACWR_MIN_DAYS, CHRONIC_DAYS, ewma, EwmaAcwr, RollingAcwr } 
 export type { AcwrModel } from './acwr';
 export { addDays, daysBetween, mondayOf } from './dates';
 export { loadSummary, TREND_WEEKS } from './load-summary';
+export { loggingStatus } from './logging-status';
+export type { LoggingStatus } from './logging-status';
 export type { LoadSummary, LoadSummaryOptions } from './load-summary';
 export { MONOTONY_DAYS, monotony, strain } from './monotony';
 export { sessionLoad } from './session-load';

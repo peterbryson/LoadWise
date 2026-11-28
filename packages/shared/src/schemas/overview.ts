@@ -42,6 +42,16 @@ export interface SharingAthlete {
   status: OverviewStatus;
   flags: OverviewFlag[];
   checks: OverviewChecks;
+  /**
+   * #50: whether they have logged. A yes/no and a date, never scores, so every staff role sees it
+   * (a coach gets wellness status only, DL-022). Never sent for an athlete who does not share.
+   */
+  logging: {
+    /** A wellness check-in is dated today (the overview's Europe/London date). */
+    checkedInToday: boolean;
+    /** Latest session on or before today, YYYY-MM-DD, from any of their squads (#8); null if none. */
+    lastSessionDate: string | null;
+  };
   load: {
     /** This Monday-to-Sunday week so far, in AU. */
     thisWeek: number;
@@ -59,6 +69,8 @@ export interface SquadOverview {
   /** The Europe/London calendar day the statuses are for, YYYY-MM-DD. */
   date: string;
   viewerRole: StaffRole;
+  /** #50 AC3: when the API built this overview, as an ISO 8601 timestamp. */
+  generatedAt: string;
   /** Every athlete in the squad, problems first: flagged, incomplete, clear, then not sharing. */
   athletes: OverviewAthlete[];
 }
