@@ -1,3 +1,4 @@
+import { TEAM_SESSION_CREATOR_ROLES } from '@loadwise/shared';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Switch, View } from 'react-native';
 import { ApiClient, ApiError, MySquad } from '@/lib/api';
@@ -23,13 +24,15 @@ interface MySquadsProps {
   onOpenMembers: (squad: MySquad) => void;
   /** #10: staff open the squad overview of athletes' status and flags. */
   onOpenOverview: (squad: MySquad) => void;
-  /** #49: staff open the squad's invite code to copy, share or replace it. Hidden if not given. */
-  onOpenInvite?: (squad: MySquad) => void;
   /**
    * #48: list only the squads the user supports as staff (the Squad tab) or only those they play
    * in (Profile). Lists every squad when left out.
    */
   only?: 'staff' | 'athlete';
+  /** #49: staff open the squad's invite code to copy, share or replace it. Hidden if not given. */
+  onOpenInvite?: (squad: MySquad) => void;
+  /** #17: coaches and S&C coaches log a team session for the squad. Not shown if left out. */
+  onLogTeamSession?: (squad: MySquad) => void;
 }
 
 const headings = { all: 'My squads', staff: 'Squads I support', athlete: 'My squads' };
@@ -47,7 +50,15 @@ function errorText(error: unknown): string {
  * #2 AC3 and #3: the squads the signed-in user belongs to, with their role in each. For athlete
  * memberships it holds the per-squad "Share my data" switch.
  */
-export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview, only, onOpenInvite }: MySquadsProps) {
+export function MySquads({
+  api,
+  refreshKey,
+  onOpenMembers,
+  onOpenOverview,
+  only,
+  onOpenInvite,
+  onLogTeamSession,
+}: MySquadsProps) {
   const filter = only ?? 'all';
   const { colors } = useTheme();
   const [state, setState] = useState<State>({ kind: 'loading' });
@@ -124,6 +135,14 @@ export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview, only,
                     accessibilityHint={`Shows each athlete's status and flags in ${squad.squadName}`}
                     onPress={() => onOpenOverview(squad)}
                   />
+                  {onLogTeamSession && TEAM_SESSION_CREATOR_ROLES.includes(squad.role) ? (
+                    <Button
+                      label="Log team session"
+                      variant="secondary"
+                      accessibilityHint={`Logs one session for ${squad.squadName}; each athlete adds their RPE`}
+                      onPress={() => onLogTeamSession(squad)}
+                    />
+                  ) : null}
                   <Button
                     label="View members"
                     variant="secondary"

@@ -11,6 +11,7 @@ import { Metric, MetricRow } from '@/components/Metric';
 import { PreviewBanner } from '@/components/PreviewBanner';
 import { ProgressBar, Screen, ScreenHeader } from '@/components/Screen';
 import { SyncStatusCard } from '@/components/SyncStatusCard';
+import { TeamSessionsToRate } from '@/components/TeamSessionsToRate';
 import { todayCaption } from '@/lib/dates';
 import { sample } from '@/preview/sample-data';
 
@@ -43,6 +44,9 @@ export default function TodayScreen() {
 
       {/* #6: real queue state, not part of the preview. */}
       <SyncStatusCard />
+
+      {/* #17 AC2: real team sessions waiting for the athlete's RPE, not part of the preview. */}
+      <TeamSessionsToRate />
 
       {state === 'new' ? (
         <>

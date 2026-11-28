@@ -17,7 +17,10 @@ export default function SquadScreen() {
   const api = useMemo(() => createApiClient({ baseUrl: apiBaseUrl, getIdToken }), [getIdToken]);
   const [squadsVersion, setSquadsVersion] = useState(0);
 
-  function open(pathname: '/squad-overview' | '/squad-members' | '/squad-invite', squad: MySquad) {
+  function open(
+    pathname: '/squad-overview' | '/squad-members' | '/squad-invite' | '/log-team-session',
+    squad: MySquad,
+  ) {
     router.push({ pathname, params: { squadId: squad.squadId, squadName: squad.squadName } });
   }
 
@@ -31,6 +34,7 @@ export default function SquadScreen() {
         onOpenOverview={(squad) => open('/squad-overview', squad)}
         onOpenMembers={(squad) => open('/squad-members', squad)}
         onOpenInvite={(squad) => open('/squad-invite', squad)}
+        onLogTeamSession={(squad) => open('/log-team-session', squad)}
       />
       <CreateSquadForm api={api} onCreated={() => setSquadsVersion((n) => n + 1)} />
     </Screen>
