@@ -23,7 +23,21 @@ interface MySquadsProps {
   onOpenMembers: (squad: MySquad) => void;
   /** #10: staff open the squad overview of athletes' status and flags. */
   onOpenOverview: (squad: MySquad) => void;
+  /** #49: staff open the squad's invite code to copy, share or replace it. Hidden if not given. */
+  onOpenInvite?: (squad: MySquad) => void;
+  /**
+   * #48: list only the squads the user supports as staff (the Squad tab) or only those they play
+   * in (Profile). Lists every squad when left out.
+   */
+  only?: 'staff' | 'athlete';
 }
+
+const headings = { all: 'My squads', staff: 'Squads I support', athlete: 'My squads' };
+const emptyTexts = {
+  all: 'You are not in a squad yet. Join one with the invite code from your coach.',
+  staff: 'You do not support a squad yet. Create one below.',
+  athlete: 'You are not in a squad yet. Join one with the invite code from your coach.',
+};
 
 function errorText(error: unknown): string {
   return error instanceof ApiError ? error.message : 'Something went wrong. Try again.';
@@ -33,7 +47,8 @@ function errorText(error: unknown): string {
  * #2 AC3 and #3: the squads the signed-in user belongs to, with their role in each. For athlete
  * memberships it holds the per-squad "Share my data" switch.
  */
-export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview }: MySquadsProps) {
+export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview, only, onOpenInvite }: MySquadsProps) {
+  const filter = only ?? 'all';
   const { colors } = useTheme();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
@@ -44,7 +59,10 @@ export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview }: MyS
     api
       .mySquads()
       .then((squads) => {
-        if (!cancelled) setState({ kind: 'loaded', squads });
+        const shown = squads.filter(
+          (squad) => filter === 'all' || (filter === 'athlete') === (squad.role === 'ATHLETE'),
+        );
+        if (!cancelled) setState({ kind: 'loaded', squads: shown });
       })
       .catch((error: unknown) => {
         if (!cancelled) setState({ kind: 'error', message: errorText(error) });
@@ -52,7 +70,7 @@ export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview }: MyS
     return () => {
       cancelled = true;
     };
-  }, [api, refreshKey, attempt]);
+  }, [api, refreshKey, attempt, filter]);
 
   function sharingChanged(squadId: string, consentGiven: boolean) {
     setState((current) =>
@@ -70,7 +88,7 @@ export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview }: MyS
   return (
     <Card gap={10}>
       <AppText variant="heading" accessibilityRole="header">
-        My squads
+        {headings[filter]}
       </AppText>
 
       {state.kind === 'loading' ? (
@@ -86,7 +104,7 @@ export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview }: MyS
 
       {state.kind === 'loaded' && state.squads.length === 0 ? (
         <AppText variant="caption" color="textMuted">
-          You are not in a squad yet. Join one with the invite code from your coach.
+          {emptyTexts[filter]}
         </AppText>
       ) : null}
 
@@ -112,6 +130,14 @@ export function MySquads({ api, refreshKey, onOpenMembers, onOpenOverview }: MyS
                     accessibilityHint={`Lists the members of ${squad.squadName}`}
                     onPress={() => onOpenMembers(squad)}
                   />
+                  {onOpenInvite ? (
+                    <Button
+                      label="Invite athletes"
+                      variant="secondary"
+                      accessibilityHint={`Shows the invite code for ${squad.squadName} to copy or share`}
+                      onPress={() => onOpenInvite(squad)}
+                    />
+                  ) : null}
                 </>
               )}
             </Card>
