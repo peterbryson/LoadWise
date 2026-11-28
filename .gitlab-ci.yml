@@ -30,7 +30,11 @@ typecheck:
 test:
   stage: test
   script:
-    - pnpm test
+    # Jest starts one worker per CPU core less one, in every package at once. On the laptop
+    # runner (20 cores) that is about 38 Node processes in Docker's memory limit, and the job was
+    # killed (exit 143) or timed out at 5 s (I-18, I-46). Four workers per package keeps it in
+    # memory; the tests and coverage thresholds are unchanged.
+    - pnpm test -- --maxWorkers=4
   artifacts:
     when: always
     paths:
