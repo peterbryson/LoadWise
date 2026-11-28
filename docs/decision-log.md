@@ -18,6 +18,70 @@ Template:
 
 ---
 
+## DL-034: Overnight demo prototype on one integration branch, with local story branches and a single merge request
+
+- Date: 28 Nov 2026
+- Status: Proposed (Peter asked for this way of working on 28 Nov; set up by Claude Code)
+- Context: after the coach-flow merges, Peter asked Claude Code to work overnight, without him
+  available for decisions, on "a kind of prototype alongside main": branches that each solve a work
+  item and merge into one prototype branch, "that way I only have to review one merge request in the
+  morning and there isn't unnecessary pipelines running as these stop my laptop from running". The
+  CI runner is on his laptop (DL-003), and parallel pipelines caused test timeouts and a killed job
+  on 28 Nov (I-18, exit 143 with 1.9 GB RAM free).
+- Options considered:
+  - **One merge request per story, as in DL-032.** Keeps the review rule exactly, but every push runs
+    a pipeline on the laptop and Peter wakes up to many merge requests.
+  - **Commit everything straight onto one branch.** One merge request, but no per-item history.
+  - **`prototype/demo` from `main`, with a local `feat/<issue>-...` branch per work item merged into it
+    with `--no-ff` (chosen).** Each item stays a visible, revertable merge commit with its issue number;
+    only `prototype/demo` is pushed, so one pipeline runs, at the end; GitLab issues are moved through
+    To do, In progress and In review with a comment per step so the board shows the flow.
+- Decision: chosen as above. Local checks run one package at a time to keep the laptop usable.
+  Story branches are not pushed. Decisions Peter would normally make are taken by Claude Code, logged
+  as Proposed, and listed in the merge request for him to accept or reverse.
+- Consequences: the single merge request is large and breaks the "one story per merge request" rule
+  in CLAUDE.md for this batch; Peter can still review it merge commit by merge commit
+  (`git log --first-parent prototype/demo`), or ask for items to be split out. This needs his
+  acceptance as a process change (requirements-changes row). R16 (too much AI code to defend) rises.
+
+---
+
+## DL-033: Visual refresh: keep StyleSheet and hand-build shadcn-style tokens and primitives
+
+- Date: 28 Nov 2026
+- Status: Proposed (Peter asked for a much sleeker UI "use mobbin for inspiration and shadecn etc."; option chosen by Claude Code overnight)
+- Context: Peter finds the current mobile UI "very vibe coded looking". The app runs Expo SDK 58,
+  React Native 0.88 (New Architecture), React 19.3 and expo-router 58, styled with `StyleSheet` and a
+  small token and context theme (`src/theme/tokens.ts`, `theme.tsx`), with no custom Babel or Metro
+  config and about 360 React Native Testing Library tests that query by role, label and text. The
+  interim video on 18 Jan 2027 needs a stable build, and Peter must defend every line.
+- Options considered (versions checked on npm and in the docs on 28 Nov 2026; sources in the research
+  report kept with this entry's AI-log row):
+  - **react-native-reusables (the shadcn/ui port) with NativeWind v4.2.7.** The most faithful shadcn
+    look, with Radix-style accessible primitives. But no published Expo SDK 58 or jest-expo
+    verification; adds Tailwind, `tailwind.config.js`, `global.css`, a new `metro.config.js`, a Babel
+    JSX change, a Portal host and four helper libraries; every style is rewritten in a new syntax.
+  - **The same with NativeWind v5.** Still `5.0.0-rc.1`, documented as pre-release and tested on SDK 57.
+  - **NativeWind or Uniwind alone.** Same build changes, and every primitive still built by hand.
+  - **Tamagui 3.** Large API and optional compiler; replaces every primitive.
+  - **gluestack-ui v5.** Built on the NativeWind v5 release candidate.
+  - **Unistyles 3.** Close to `StyleSheet`, but needs native modules, so no Expo Go and a dev-client
+    workflow.
+  - **Keep `StyleSheet`; rebuild the tokens and primitives by hand in shadcn's style (chosen).** No
+    Babel, Metro or Jest change; plain TypeScript Peter already writes; components keep their props and
+    accessibility attributes, so tests stay valid.
+- Decision: the last option. Zinc neutrals, one green accent kept from the Figma V1 brand, hairline
+  borders instead of shadows, a radius and spacing scale, and new primitives (Badge, SegmentedControl,
+  ScoreSelector, StatTile, Avatar, EmptyState) styled on shadcn/ui's anatomy and the Mobbin patterns in
+  `docs/design/ui-design-direction.md`.
+- Consequences: the look is shadcn-inspired rather than identical, and there are no ready-made
+  Dialog, Popover or Select components. The Figma V1 variables no longer match the code until Figma or
+  `docs/design/` is updated. Every new colour pair must be checked against WCAG 2.2 AA before any
+  accessibility claim (NFR 1). Moving to react-native-reusables later stays possible as a spike once
+  NativeWind v5 is stable on the SDK in use.
+
+---
+
 ## DL-032: Build the coach-flow stories in parallel, one agent and one merge request each, with a throwaway integration branch
 
 - Date: 27 Nov 2026
