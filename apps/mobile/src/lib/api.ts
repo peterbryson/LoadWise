@@ -3,6 +3,7 @@ import type {
   CreatedTeamSession,
   CreateSquad,
   CreateTeamSession,
+  LoadDetail,
   LoadTotals,
   MyLoad,
   SessionLog,
@@ -105,6 +106,16 @@ export interface WellnessTrend {
   weeks: WellnessTrendPoint[];
 }
 
+/** #51: one wellness check-in as staff with WELLNESS_SCORES see it. Scores are 1 (worst) to 5 (best). */
+export interface StaffWellnessEntry {
+  /** YYYY-MM-DD. */
+  date: string;
+  sleep: number;
+  soreness: number;
+  fatigue: number;
+  stress: number;
+}
+
 interface ApiClientOptions {
   baseUrl: string;
   getIdToken: () => Promise<string>;
@@ -191,6 +202,18 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
       request<LoadTotals>(
         'GET',
         `/squads/${encodeURIComponent(squadId)}/athletes/${encodeURIComponent(athleteId)}/load`,
+      ),
+    /** #51 (I-28): monotony and strain from the athlete's combined sessions. S&C coaches and physios only. */
+    athleteLoadDetail: (squadId: string, athleteId: string) =>
+      request<LoadDetail>(
+        'GET',
+        `/squads/${encodeURIComponent(squadId)}/athletes/${encodeURIComponent(athleteId)}/load-detail`,
+      ),
+    /** #51: the athlete's last 28 wellness check-ins, newest first. Roles with WELLNESS_SCORES only. */
+    athleteWellness: (squadId: string, athleteId: string) =>
+      request<StaffWellnessEntry[]>(
+        'GET',
+        `/squads/${encodeURIComponent(squadId)}/athletes/${encodeURIComponent(athleteId)}/wellness`,
       ),
     /** #9: today's flags, each with its reason, value and threshold. */
     myFlags: () => request<CurrentFlags>('GET', '/me/flags'),
