@@ -28,6 +28,7 @@ import {
   Users,
   X,
 } from 'lucide-react-native';
+import { View } from 'react-native';
 import { useTheme } from '@/theme/theme';
 import { ColorToken } from '@/theme/tokens';
 
@@ -85,13 +86,12 @@ interface IconProps {
 export function Icon({ name, size, color, strokeWidth = 2 }: IconProps) {
   const { colors } = useTheme();
   const { icon: Glyph, color: defaultColor } = icons[name];
+  // aria-hidden on a wrapping View, not props on the SVG: React Native maps it for iOS, Android and
+  // web, whereas react-native-svg passes accessibility props straight to the web <svg>, which React
+  // rejects as unknown DOM attributes.
   return (
-    <Glyph
-      size={size}
-      color={colors[color ?? defaultColor]}
-      strokeWidth={strokeWidth}
-      accessible={false}
-      importantForAccessibility="no-hide-descendants"
-    />
+    <View aria-hidden pointerEvents="none">
+      <Glyph size={size} color={colors[color ?? defaultColor]} strokeWidth={strokeWidth} />
+    </View>
   );
 }
