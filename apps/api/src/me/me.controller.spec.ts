@@ -25,6 +25,7 @@ const prisma = {
     findUniqueOrThrow: jest.fn(),
     create: jest.fn(),
     updateMany: jest.fn(),
+    delete: jest.fn(),
   },
   healthConsentEvent: { create: jest.fn() },
   $transaction: jest.fn(),
@@ -176,6 +177,36 @@ describe('me API', () => {
         .set(asAthlete)
         .send(consent)
         .expect(500);
+    });
+  });
+
+  describe('NFR2 #14: DELETE /me deletes the account and data', () => {
+    it('requires sign-in (401) and deletes nothing', async () => {
+      await request(app.getHttpServer()).delete('/me').expect(401);
+      expect(prisma.user.delete).not.toHaveBeenCalled();
+    });
+
+    it("deletes only the caller's own user row and returns 204", async () => {
+      prisma.user.delete.mockResolvedValue(storedUser(null));
+
+      const res = await request(app.getHttpServer()).delete('/me').set(asAthlete).expect(204);
+
+      expect(res.body).toEqual({});
+      expect(prisma.user.delete).toHaveBeenCalledTimes(1);
+      expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: ATHLETE.id } });
+    });
+
+    it('works without health-data consent, so anyone can leave', async () => {
+      prisma.user.delete.mockResolvedValue(storedUser(null));
+      await request(app.getHttpServer()).delete('/me').set(asAthlete).expect(204);
+    });
+
+    it('reports a database failure as 500 without the error detail', async () => {
+      prisma.user.delete.mockRejectedValue(new Error('connection to 10.0.0.5 refused'));
+
+      const res = await request(app.getHttpServer()).delete('/me').set(asAthlete).expect(500);
+
+      expect(JSON.stringify(res.body)).not.toContain('10.0.0.5');
     });
   });
 });

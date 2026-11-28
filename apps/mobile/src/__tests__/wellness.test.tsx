@@ -52,6 +52,8 @@ describe('FR1: wellness check screen (#5)', () => {
       signIn: jest.fn(),
       createAccount: jest.fn(),
       resetPassword: jest.fn(),
+      confirmPassword: jest.fn(),
+      deleteSignIn: jest.fn(),
       signOut: jest.fn(),
       getIdToken: jest.fn(),
     });

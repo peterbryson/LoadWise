@@ -35,6 +35,8 @@ beforeEach(() => {
     signIn: jest.fn(),
     createAccount: jest.fn(),
     resetPassword: jest.fn(),
+    confirmPassword: jest.fn(),
+    deleteSignIn: jest.fn(),
     signOut: jest.fn(),
     getIdToken: jest.fn(),
   });

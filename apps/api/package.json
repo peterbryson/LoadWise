@@ -13,7 +13,8 @@
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "perf:overview": "jest --config jest.perf.config.js --runInBand"
+    "perf:overview": "jest --config jest.perf.config.js --runInBand",
+    "test:db": "jest --config jest.integration.config.js --runInBand"
   },
   "dependencies": {
     "@loadwise/analytics": "workspace:*",

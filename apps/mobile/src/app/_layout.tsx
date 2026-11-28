@@ -53,6 +53,7 @@ function Navigator() {
         <Stack.Screen name="squad-members" />
         <Stack.Screen name="squad-athlete-load" />
         <Stack.Screen name="squad-overview" />
+        <Stack.Screen name="delete-account" />
       </Stack>
     </>
   );

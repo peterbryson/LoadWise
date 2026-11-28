@@ -3,6 +3,7 @@ import type { SessionLog, WellnessCheck } from '@loadwise/shared';
 import { randomUUID } from 'expo-crypto';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
+import { offlineQueueKey } from '@/lib/account-deletion';
 import { ApiError, apiBaseUrl, createApiClient, SavedSession, SavedWellness } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { createOfflineQueue, FlushResult, NewEntry, OfflineQueue, PendingEntry, retryDelayMs } from '@/lib/offline-queue';
@@ -48,7 +49,7 @@ export function OfflineSyncProvider({ children }: { children: ReactNode }) {
       uid
         ? createOfflineQueue({
             storage: AsyncStorage,
-            key: `loadwise.offline-queue.v1.${uid}`,
+            key: offlineQueueKey(uid),
             send: (entry) => (entry.kind === 'session' ? api.logSession(entry.payload) : api.saveWellness(entry.payload)),
             now: () => new Date(),
             // The only place pending is updated from, so it always matches the stored list.

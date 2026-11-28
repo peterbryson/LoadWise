@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Post } from '@nestjs/common';
 import { GiveHealthConsentSchema } from '@loadwise/shared';
 import type { GiveHealthConsent } from '@loadwise/shared';
 import type { AuthUser } from '../auth/auth.service';
@@ -25,5 +25,16 @@ export class MeController {
     @Body(new ZodValidationPipe(GiveHealthConsentSchema)) body: GiveHealthConsent,
   ): Promise<Me> {
     return this.me.giveHealthConsent(user.id, body.noticeVersion);
+  }
+
+  /**
+   * #14: deletes the caller's account and all their data. Only ever the caller's own: there is no
+   * id in the path, so nobody can delete someone else's account. No health-data consent is needed,
+   * because withdrawing from LoadWise entirely must always be possible.
+   */
+  @Delete()
+  @HttpCode(204)
+  deleteAccount(@CurrentUser() user: AuthUser): Promise<void> {
+    return this.me.deleteAccount(user.id);
   }
 }

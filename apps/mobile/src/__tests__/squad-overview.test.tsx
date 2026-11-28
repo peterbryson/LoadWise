@@ -85,6 +85,8 @@ describe('FR4: squad overview for staff (#10 AC1)', () => {
       signIn: jest.fn(),
       createAccount: jest.fn(),
       resetPassword: jest.fn(),
+      confirmPassword: jest.fn(),
+      deleteSignIn: jest.fn(),
       signOut: jest.fn(),
       getIdToken: jest.fn(),
     });
@@ -215,6 +217,8 @@ describe('FR4 #50: who has logged today, filters and refresh', () => {
       signIn: jest.fn(),
       createAccount: jest.fn(),
       resetPassword: jest.fn(),
+      confirmPassword: jest.fn(),
+      deleteSignIn: jest.fn(),
       signOut: jest.fn(),
       getIdToken: jest.fn(),
     });
