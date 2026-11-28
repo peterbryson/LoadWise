@@ -4,9 +4,10 @@ import { useAuth } from '@/lib/auth';
 import { ConsentProvider, useConsent } from '@/lib/consent';
 
 const mockMe = jest.fn();
+const mockMySquads = jest.fn();
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  createApiClient: () => ({ me: mockMe }),
+  createApiClient: () => ({ me: mockMe, mySquads: mockMySquads }),
 }));
 jest.mock('@/lib/auth', () => ({ useAuth: jest.fn() }));
 
@@ -26,12 +27,14 @@ function signedInAs(uid: string | null) {
 }
 
 function Probe() {
-  const { status, retry, markGiven } = useConsent();
+  const { status, hasStaffSquad, retry, markGiven, markStaffSquad } = useConsent();
   return (
     <>
       <Text>{`status:${status}`}</Text>
+      <Text>{`staff:${hasStaffSquad}`}</Text>
       <Pressable accessibilityRole="button" accessibilityLabel="Retry" onPress={retry} />
       <Pressable accessibilityRole="button" accessibilityLabel="Mark given" onPress={markGiven} />
+      <Pressable accessibilityRole="button" accessibilityLabel="Mark staff" onPress={markStaffSquad} />
     </>
   );
 }
@@ -56,6 +59,7 @@ describe('NFR2: consent status for the signed-in user (#1 AC4)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     signedInAs('u1');
+    mockMySquads.mockResolvedValue([]);
   });
 
   it('does not call the API when nobody is signed in', async () => {
@@ -99,5 +103,56 @@ describe('NFR2: consent status for the signed-in user (#1 AC4)', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Mark given' }));
 
     expect(screen.getByText('status:given')).toBeTruthy();
+  });
+});
+
+const coachSquad = { squadId: 'sq-c', squadName: 'U20s', role: 'COACH', inviteCode: 'ABCD2345' };
+const athleteSquad = { squadId: 'sq-a', squadName: 'Harriers', role: 'ATHLETE', consentGiven: true };
+
+describe('FR4 #48: staff membership for the signed-in user', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    signedInAs('u1');
+  });
+
+  it('reports a staff squad when the user holds any staff membership, without consent', async () => {
+    mockMe.mockResolvedValue(me(false));
+    mockMySquads.mockResolvedValue([athleteSquad, coachSquad]);
+    await renderProbe();
+
+    expect(await screen.findByText('status:needed')).toBeTruthy();
+    expect(screen.getByText('staff:true')).toBeTruthy();
+  });
+
+  it('does not count athlete memberships as staff', async () => {
+    mockMe.mockResolvedValue(me(true));
+    mockMySquads.mockResolvedValue([athleteSquad]);
+    await renderProbe();
+
+    expect(await screen.findByText('status:given')).toBeTruthy();
+    expect(screen.getByText('staff:false')).toBeTruthy();
+  });
+
+  it('reports an error when the squads cannot be loaded', async () => {
+    mockMe.mockResolvedValue(me(true));
+    mockMySquads.mockRejectedValue(new Error('offline'));
+    await renderProbe();
+
+    expect(await screen.findByText('status:error')).toBeTruthy();
+  });
+
+  it('switches to staff straight after a squad is created at setup, keeping consent', async () => {
+    mockMe.mockResolvedValue(me(false));
+    mockMySquads.mockResolvedValue([]);
+    await renderProbe();
+    await screen.findByText('staff:false');
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark staff' }));
+    expect(screen.getByText('staff:true')).toBeTruthy();
+    expect(screen.getByText('status:needed')).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Mark given' }));
+    expect(screen.getByText('status:given')).toBeTruthy();
+    expect(screen.getByText('staff:true')).toBeTruthy();
   });
 });
