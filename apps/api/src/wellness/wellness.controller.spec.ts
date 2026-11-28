@@ -6,6 +6,7 @@ import request from 'supertest';
 import { AppModule } from '../app.module';
 import { TOKEN_VERIFIER, TokenVerifier } from '../auth/token-verifier';
 import { REQUIRES_HEALTH_CONSENT_KEY } from '../consent/requires-health-consent.decorator';
+import { CLOCK } from '../metrics/clock';
 import { PrismaService } from '../prisma/prisma.service';
 import { WellnessController } from './wellness.controller';
 
@@ -23,7 +24,7 @@ const fakeVerifier: TokenVerifier = {
 
 const prisma = {
   user: { findUnique: jest.fn(), create: jest.fn() },
-  wellnessEntry: { create: jest.fn(), findUnique: jest.fn() },
+  wellnessEntry: { create: jest.fn(), findUnique: jest.fn(), findFirst: jest.fn() },
 };
 
 const asAthlete = { Authorization: 'Bearer athlete-token' };
@@ -63,6 +64,9 @@ describe('wellness API', () => {
       .useValue(prisma)
       .overrideProvider(TOKEN_VERIFIER)
       .useValue(fakeVerifier)
+      // 00:30 on 21 Jun in Belfast is still 20 Jun in UTC, so "today" must come from London time.
+      .overrideProvider(CLOCK)
+      .useValue({ now: () => new Date('2026-06-20T23:30:00.000Z') })
       .compile();
     app = moduleRef.createNestApplication({ logger: false });
     await app.init();
@@ -214,6 +218,43 @@ describe('wellness API', () => {
 
       await request(app.getHttpServer()).post('/wellness').set(asAthlete).send(queued).expect(403);
       expect(prisma.wellnessEntry.findUnique).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("FR1: GET /wellness/today tells Today whether the athlete has checked in (#45)", () => {
+    it('requires sign-in (401)', async () => {
+      await request(app.getHttpServer()).get('/wellness/today').expect(401);
+    });
+
+    it('requires health-data consent (403)', async () => {
+      consentGiven(false);
+
+      await request(app.getHttpServer()).get('/wellness/today').set(asAthlete).expect(403);
+      expect(prisma.wellnessEntry.findFirst).not.toHaveBeenCalled();
+    });
+
+    it("returns today's check-in, looked up for the caller on the Europe/London date", async () => {
+      prisma.wellnessEntry.findFirst.mockResolvedValue(
+        storedEntry({ athleteId: ATHLETE.id, date: new Date('2026-06-21'), sleep: 4, soreness: 2, fatigue: 3, stress: 5 }),
+      );
+
+      const response = await request(app.getHttpServer()).get('/wellness/today').set(asAthlete).expect(200);
+
+      expect(prisma.wellnessEntry.findFirst).toHaveBeenCalledWith({
+        where: { athleteId: ATHLETE.id, date: new Date('2026-06-21') },
+      });
+      expect(response.body).toEqual({
+        date: '2026-06-21',
+        entry: { id: 'w1', date: '2026-06-21', sleep: 4, soreness: 2, fatigue: 3, stress: 5, clientId: null },
+      });
+    });
+
+    it('returns a null entry when there is no check-in yet today', async () => {
+      prisma.wellnessEntry.findFirst.mockResolvedValue(null);
+
+      const response = await request(app.getHttpServer()).get('/wellness/today').set(asAthlete).expect(200);
+
+      expect(response.body).toEqual({ date: '2026-06-21', entry: null });
     });
   });
 

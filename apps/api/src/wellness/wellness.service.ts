@@ -1,7 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import type { WellnessCheck } from '@loadwise/shared';
 import { clientIdTaken, IdempotentResult } from '../common/idempotent-write';
 import { isUniqueViolation } from '../common/prisma-errors';
+import { CLOCK, Clock, londonDate } from '../metrics/clock';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** A saved check-in, as returned by POST /wellness. */
@@ -15,6 +16,12 @@ export interface SavedWellness {
   stress: number;
   /** #6: the app's idempotency key, or null if it was saved without one. */
   clientId: string | null;
+}
+
+/** GET /wellness/today: the Europe/London day and the athlete's check-in for it, if any (#45). */
+export interface TodayWellness {
+  date: string;
+  entry: SavedWellness | null;
 }
 
 interface WellnessRow {
@@ -42,7 +49,20 @@ function toSaved(entry: WellnessRow): SavedWellness {
 
 @Injectable()
 export class WellnessService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
+
+  /**
+   * #45: whether the athlete has checked in today, so Today can show "Check-in done" from real
+   * data. "Today" is the Europe/London day, the same as GET /me/load and the squad overview.
+   */
+  async today(athleteId: string): Promise<TodayWellness> {
+    const date = londonDate(this.clock.now());
+    const entry = await this.prisma.wellnessEntry.findFirst({ where: { athleteId, date: new Date(date) } });
+    return { date, entry: entry ? toSaved(entry) : null };
+  }
 
   /**
    * FR 1, #5: saves the athlete's daily check-in. The athlete is always the signed-in user, never
