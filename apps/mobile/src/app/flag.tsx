@@ -68,6 +68,7 @@ export default function FlagScreen() {
 
       <InlineMessage
         kind="info"
+        boxed
         text="This is training guidance, not a medical assessment. For pain or injury, speak to a physio or GP."
       />
       <Button label="Got it" onPress={() => router.back()} />
@@ -80,22 +81,24 @@ function FlagDetail({ flag }: { flag: Flag }) {
     <>
       <Card tone="warning">
         <View style={styles.title}>
-          <Icon name="alert-warning-24" size={24} />
+          <Icon name="alert-warning-24" size={20} />
           <AppText variant="heading" style={styles.flex}>
             {flagTitle(flag)}
           </AppText>
         </View>
-        <AppText variant="caption">{flag.reason}</AppText>
+        <AppText variant="body">{flag.reason}</AppText>
       </Card>
 
       <Card gap={10}>
-        <AppText variant="caption" color="textMuted">
+        <AppText variant="overline" color="textMuted">
           The numbers
         </AppText>
         {flagNumbers(flag).map((row) => (
           <View key={row.label} style={styles.row} accessible accessibilityLabel={`${row.label}: ${row.value}`}>
             <AppText variant="body">{row.label}</AppText>
-            <AppText variant="heading">{row.value}</AppText>
+            <AppText variant="heading" style={styles.value}>
+              {row.value}
+            </AppText>
           </View>
         ))}
         <AppText variant="caption" color="textMuted">
@@ -115,6 +118,7 @@ function FlagDetail({ flag }: { flag: Flag }) {
 
 const styles = StyleSheet.create({
   title: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 28 },
+  value: { fontVariant: ['tabular-nums'] },
   flex: { flex: 1 },
 });

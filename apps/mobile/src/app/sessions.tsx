@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
 import { InlineMessage } from '@/components/InlineMessage';
 import { NavHeader, Screen } from '@/components/Screen';
 import { WaitingToSync } from '@/components/WaitingToSync';
@@ -74,12 +75,11 @@ export default function SessionsScreen() {
       ) : null}
 
       {state.kind === 'loaded' && items.length === 0 ? (
-        <Card gap={4}>
-          <AppText variant="heading">No sessions yet</AppText>
-          <AppText variant="caption" color="textMuted">
-            Sessions you log from Today appear here, newest first.
-          </AppText>
-        </Card>
+        <EmptyState
+          icon="activity"
+          title="No sessions yet"
+          description="Sessions you log from Today appear here, newest first."
+        />
       ) : null}
 
       {items.map((session) => (
@@ -87,7 +87,7 @@ export default function SessionsScreen() {
           <Card gap={2}>
             <View style={styles.row}>
               <AppText variant="heading">{`${sessionTypeLabels[session.type]} · ${session.durationMinutes} min`}</AppText>
-              <AppText variant="label">{session.load} AU</AppText>
+              <AppText variant="heading" color="textMuted">{`${session.load} AU`}</AppText>
             </View>
             <AppText variant="caption" color="textMuted">
               {shortDay(session.date)} · RPE {session.rpe}

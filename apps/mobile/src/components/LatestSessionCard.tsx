@@ -73,7 +73,7 @@ export function LatestSessionCard() {
         accessibilityLabel={`Latest session: ${sessionAccessibilityLabel(session)}. Show recent sessions`}
       >
         <Card gap={2}>
-          <AppText variant="caption" color="textMuted">
+          <AppText variant="overline" color="textMuted">
             Latest session
           </AppText>
           <AppText variant="heading">{`${sessionTypeLabels[session.type]} · ${session.durationMinutes} min`}</AppText>
@@ -88,7 +88,7 @@ export function LatestSessionCard() {
 
   return (
     <Card gap={state.kind === 'loading' ? 8 : 4}>
-      <AppText variant="caption" color="textMuted">
+      <AppText variant="overline" color="textMuted">
         Latest session
       </AppText>
 

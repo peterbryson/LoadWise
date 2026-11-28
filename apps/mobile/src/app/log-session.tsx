@@ -16,6 +16,7 @@ import { localIsoDate } from '@/lib/dates';
 import { OFFLINE_SAVED_MESSAGE } from '@/lib/offline-queue';
 import { useOfflineSync } from '@/lib/offline-sync';
 import { useTheme } from '@/theme/theme';
+import { radius } from '@/theme/tokens';
 
 const types = [
   { value: 'TRAINING', label: 'Training' },
@@ -108,27 +109,29 @@ export default function LogSessionScreen() {
     <Screen>
       <NavHeader title="Log a session" icon="close" onPress={() => router.back()} />
 
-      <View style={styles.group}>
+      <Card gap={12}>
         <AppText variant="heading">Type</AppText>
         <OptionRow options={types} selected={type} onSelect={change(setType)} accessibilityLabel="Session type" />
-      </View>
-
-      {/* Sessions are dated today. Logging a past day is not in #4's criteria. */}
-      <View
-        style={[styles.date, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: colors.cardBorderWidth }]}
-        accessible
-        accessibilityLabel="Date: today"
-      >
-        <AppText variant="label" color="textMuted">
-          Date
-        </AppText>
-        <View style={styles.dateValue}>
-          <AppText variant="label">Today</AppText>
-          <Icon name="chevron-date" size={18} />
+        {/* Sessions are dated today. Logging a past day is not in #4's criteria. */}
+        <View
+          style={[styles.date, { backgroundColor: colors.surfaceRaised }]}
+          accessible
+          accessibilityLabel="Date: today"
+        >
+          <View style={styles.dateValue}>
+            <Icon name="calendar" size={16} />
+            <AppText variant="label" color="textMuted">
+              Date
+            </AppText>
+          </View>
+          <View style={styles.dateValue}>
+            <AppText variant="label">Today</AppText>
+            <Icon name="chevron-date" size={18} />
+          </View>
         </View>
-      </View>
+      </Card>
 
-      <View style={styles.group}>
+      <Card gap={12}>
         <AppText variant="heading">Duration (minutes)</AppText>
         <OptionRow
           options={durations}
@@ -145,9 +148,9 @@ export default function LogSessionScreen() {
             placeholder="e.g. 50"
           />
         ) : null}
-      </View>
+      </Card>
 
-      <View style={styles.group}>
+      <Card gap={10}>
         <AppText variant="heading">How hard was it? (RPE)</AppText>
         {rpeRows.map((row, index) => (
           <OptionRow
@@ -165,10 +168,10 @@ export default function LogSessionScreen() {
             {rpeAnchors[rpe] ? `${rpe}: ${rpeAnchors[rpe]}` : String(rpe)}
           </AppText>
         ) : null}
-      </View>
+      </Card>
 
       {load !== null && parsed.success ? (
-        <Card gap={2} style={styles.loadCard}>
+        <Card tone="accent" gap={2} style={styles.loadCard}>
           <View style={styles.loadRow}>
             <AppText variant="label" color="textMuted">
               Session load
@@ -194,9 +197,8 @@ export default function LogSessionScreen() {
 }
 
 const styles = StyleSheet.create({
-  group: { gap: 6 },
   date: {
-    borderRadius: 12,
+    borderRadius: radius.md,
     paddingLeft: 14,
     paddingRight: 10,
     paddingVertical: 13,
