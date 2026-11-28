@@ -1,21 +1,32 @@
 # apps/mobile (Expo + React Native)
 
-The athlete app, built from the [Figma LoadWise V1](https://www.figma.com/design/TqJIKbFrsCVRNd4aZx1Tnd/LoadWise-V1)
-screens in light and dark themes. It runs in a browser on localhost through Expo's web mode, and
-the same code runs on a phone later.
+The athlete and staff app. It began from the [Figma LoadWise V1](https://www.figma.com/design/TqJIKbFrsCVRNd4aZx1Tnd/LoadWise-V1)
+screens and was restyled in the V2 design system (#52, DL-033): zinc neutrals, one green accent,
+Lucide icons, light and dark themes. It runs in a browser on localhost through Expo's web mode, and
+the same code runs on a phone.
 
-## What is real and what is a preview
+## What is real and what is not built yet (#46)
+
+Every figure on every screen comes from the API. There is no sample data left in the app.
 
 | Screen | State |
 | --- | --- |
-| Sign in, Create an account, Forgot password | **Real.** Firebase email and password sign-in (#1) |
-| First-time setup | UI only. The consent checkbox gates Continue, but consent is **not saved** yet (DL-008) |
-| Today, Flag details | **Preview.** Figma sample figures, marked with a Preview banner whose chips switch between the design's states |
-| Trends | Weekly load for the last 6 weeks and ACWR are **real**, from `GET /me/load` (#7). The Wellness card is still a **preview** with its own banner (#9) |
-| Wellness check, Log session | **Preview.** Forms validate with the shared Zod schemas and show session load from `@loadwise/analytics`, but **nothing is saved** (#4, #5) |
-| Profile | Your real Firebase name and email. The Squads section calls the **real API** (#2 create and join). Preview tools switch theme and reopen setup |
+| Sign in, Create an account, Forgot password | **Real.** Firebase email and password (#1) |
+| First-time setup | **Real.** Log my own training, support a squad as staff, or both (#48). Health-data consent is saved through `POST /me/health-consent` (DL-008); staff create their first squad |
+| Today | **Real.** Sync status (#6), flags from the engine (#9), the check-in card from `GET /wellness/today`, This week from `GET /me/load` (#45), team sessions to rate (#17) and the latest session |
+| Wellness check, Log session | **Real.** Saved through the API, or queued on the phone and synced later (#4, #5, #6). The session date is always today: logging a past day is not in #4's criteria |
+| Recent sessions, Flag details | **Real** (#4, #9) |
+| Trends | **Real.** Weekly load, usual week and EWMA ACWR (#7), wellness trend (#9) |
+| Squad tab (staff) | **Real.** Squads you support, with overview, members, invite and team-session actions (#2, #17, #48, #49) |
+| Squad overview, members, athlete detail | **Real.** Only athletes who share with the squad, with role-based detail (#3, #8, #10, #11, #21) |
+| Invite athletes | **Real.** Copy, share or (coach only) replace the code (#49) |
+| Profile | **Real:** name, email, squads you play in with a sharing switch per squad (#3), join or create a squad, Appearance (theme), Sign out, and Delete account and data (#14) |
 
-Every preview screen says so on screen, so a screenshot or demo cannot be mistaken for a working feature.
+Not built yet, and shown as not available rather than hidden:
+
+- The **AI assistant** tab button is disabled until #12, #13 and #15.
+- Profile rows **Account details, Privacy and data, About LoadWise, Connected devices and
+  Reminders** have no screens behind them; screen readers announce each as "not available yet".
 
 ## Run it on localhost
 
@@ -36,13 +47,13 @@ pnpm dev                                         # API on :3000 and the app on h
 
 ```
 src/
-  app/          Routes (Expo Router): sign-in, setup, (tabs)/index|trends|profile, wellness, log-session, flag
-  components/   Components from the Figma component set: Button, Option, Card, ListRow, TabBar, ...
-  theme/        Colour and type tokens from the Figma variables; light and dark
-  lib/          Firebase auth, API client, plain-language error messages
-  preview/      The Figma sample figures, kept apart from real data
+  app/          Routes (Expo Router): sign-in, setup, (tabs)/index|trends|squad|profile, wellness,
+                log-session, sessions, flag, squad-*, log-team-session, delete-account
+  components/   Design-system primitives (Button, Card, Badge, Avatar, Option, ListRow, TabBar, ...)
+                and screen parts such as today/CheckInCard
+  theme/        Colour, type, spacing and radius tokens; light and dark (#52)
+  lib/          Firebase auth, API client, offline queue and sync, account deletion, formatting
   __tests__/    Screen tests
-assets/icons/   Icons exported from Figma, one coloured set per theme
 ```
 
 Never put tests (or anything that is not a screen) in `src/app/`: Expo Router loads every file
@@ -60,6 +71,7 @@ pnpm --filter @loadwise/mobile lint
 
 - On a phone, sign-in does not survive an app restart yet: Firebase's React Native persistence is
   not exposed through `firebase/auth` types, so the app uses `getAuth` (persistent on web only).
-- Not checked against WCAG 2.2 AA and not user tested. Touch targets follow the design (48 to 60 px).
-- Account and "Coming later" rows in Profile have no screens behind them.
-- The session date is always today; the date picker comes with #4.
+- Not checked against WCAG 2.2 AA with real assistive technology, and not user tested. Colour pairs
+  were checked by contrast ratio only (DL-033); touch targets are at least 48 px.
+- Icons are Lucide (ISC licence) drawn through `react-native-svg`. Jest loads Lucide's CommonJS
+  build (`jest.config.js`), because it cannot load the ES module build Metro uses.

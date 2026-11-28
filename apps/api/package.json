@@ -14,7 +14,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "perf:overview": "jest --config jest.perf.config.js --runInBand",
-    "test:db": "jest --config jest.integration.config.js --runInBand"
+    "test:db": "jest --config jest.integration.config.js --runInBand",
+    "seed:demo": "nest build && node --env-file-if-exists=.env dist/demo/seed-demo.main.js"
   },
   "dependencies": {
     "@loadwise/analytics": "workspace:*",
