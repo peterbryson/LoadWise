@@ -2,10 +2,13 @@ import type { LoadTotals } from '@loadwise/shared';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
+import { RoleDetailSections } from '@/components/athlete-detail/RoleDetailSections';
+import { NotSharingNote } from '@/components/athlete-detail/SectionStatus';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { InlineMessage } from '@/components/InlineMessage';
+import { InjuryRestrictionsSection } from '@/components/injuries/InjuryRestrictionsSection';
 import { AcwrCard, WeeklyLoadCard } from '@/components/LoadTrends';
 import { NavHeader, Screen } from '@/components/Screen';
 import { ApiError, apiBaseUrl, createApiClient } from '@/lib/api';
@@ -14,7 +17,7 @@ import { useTheme } from '@/theme/theme';
 
 type State =
   | { kind: 'loading' }
-  | { kind: 'error'; message: string }
+  | { kind: 'error'; message: string; refused: boolean }
   | { kind: 'loaded'; load: LoadTotals };
 
 /**
@@ -22,6 +25,9 @@ type State =
  * squad's member list. The totals include sessions logged for any of the athlete's squads, each
  * counted once (AC1). Only totals are shown, never the sessions behind them (DL-022). Whether the
  * viewer may see this is decided by the API on every request (#11), not by this screen.
+ *
+ * #51: below the load, each role sees the sections its data categories allow (DL-022), each in
+ * its own component so later stories can add sections without reworking this screen.
  */
 export default function SquadAthleteLoadScreen() {
   const router = useRouter();
@@ -40,7 +46,8 @@ export default function SquadAthleteLoadScreen() {
         if (!cancelled) setState({ kind: 'loaded', load });
       })
       .catch((error: unknown) => {
-        if (!cancelled) setState({ kind: 'error', message: errorMessage(error) });
+        if (cancelled) return;
+        setState({ kind: 'error', message: errorMessage(error), refused: error instanceof ApiError && error.status === 403 });
       });
     return () => {
       cancelled = true;
@@ -68,6 +75,7 @@ export default function SquadAthleteLoadScreen() {
       {state.kind === 'error' ? (
         <>
           <InlineMessage kind="error" text={state.message} />
+          {state.refused ? <NotSharingNote /> : null}
           <Button label="Try again" variant="secondary" onPress={retry} />
         </>
       ) : null}
@@ -92,6 +100,11 @@ export default function SquadAthleteLoadScreen() {
           />
         </>
       ) : null}
+
+      {state.kind === 'loaded' ? (
+        <RoleDetailSections api={api} squadId={squadId} athleteId={athleteId} athleteName={athleteName} />
+      ) : null}
+      <InjuryRestrictionsSection squadId={squadId} athleteId={athleteId} />
     </Screen>
   );
 }

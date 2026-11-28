@@ -7,6 +7,7 @@ import {
   evaluateFlags,
   flagChecks,
   loadSummary,
+  loggingStatus,
   staffFlagReason,
   wellnessBaseline,
 } from '@loadwise/analytics';
@@ -52,7 +53,8 @@ export class SquadOverviewService {
 
   async overview(viewerId: string, squadId: string): Promise<SquadOverview> {
     const { role, squadName, athletes } = await this.access.squadAthletes(viewerId, squadId);
-    const today = londonDate(this.clock.now());
+    const now = this.clock.now();
+    const today = londonDate(now);
     // Only athletes who share data with this squad have any of it read (#3 AC2).
     const sharingIds = athletes.filter((athlete) => athlete.sharing).map((athlete) => athlete.id);
     const [sessions, checkIns] = sharingIds.length > 0 ? await this.read(sharingIds, today) : [new Map(), new Map()];
@@ -65,7 +67,7 @@ export class SquadOverviewService {
     );
     rows.sort((a, b) => compareOverviewRows(sortKey(a), sortKey(b)));
 
-    return { squadId, squadName, date: today, viewerRole: role, athletes: rows };
+    return { squadId, squadName, date: today, viewerRole: role, generatedAt: now.toISOString(), athletes: rows };
   }
 
   private sharingRow(
@@ -90,6 +92,8 @@ export class SquadOverviewService {
       status: athleteStatus(flags, checks),
       flags: flags.map((flag) => this.forStaff(flag, showScores)),
       checks,
+      // #50: from the same rows as the metrics, so no extra query (NFR 3.1); yes/no and a date only.
+      logging: loggingStatus(sessions, checkIns, today),
       load: {
         thisWeek: summary.weeks[summary.weeks.length - 1]?.load ?? 0,
         usualWeek: summary.usualWeek,

@@ -12,6 +12,7 @@ const EXPECTED: Record<SquadRole, Record<DataCategory, boolean>> = {
     FLAGS: false,
     WELLNESS_STATUS: false,
     WELLNESS_SCORES: false,
+    RESTRICTIONS: false,
     INJURY: false,
   },
   COACH: {
@@ -20,6 +21,7 @@ const EXPECTED: Record<SquadRole, Record<DataCategory, boolean>> = {
     FLAGS: true,
     WELLNESS_STATUS: true,
     WELLNESS_SCORES: false,
+    RESTRICTIONS: true,
     INJURY: false,
   },
   SC_COACH: {
@@ -28,6 +30,7 @@ const EXPECTED: Record<SquadRole, Record<DataCategory, boolean>> = {
     FLAGS: true,
     WELLNESS_STATUS: true,
     WELLNESS_SCORES: true,
+    RESTRICTIONS: true,
     INJURY: false,
   },
   PHYSIO: {
@@ -36,6 +39,7 @@ const EXPECTED: Record<SquadRole, Record<DataCategory, boolean>> = {
     FLAGS: true,
     WELLNESS_STATUS: true,
     WELLNESS_SCORES: true,
+    RESTRICTIONS: true,
     INJURY: true,
   },
 };
@@ -58,6 +62,13 @@ describe('NFR2: role-to-data access matrix (#11 AC1, AC2)', () => {
   it('never lets a coach or S&C coach see injury data (AC1)', () => {
     expect(canView('COACH', 'INJURY')).toBe(false);
     expect(canView('SC_COACH', 'INJURY')).toBe(false);
+  });
+
+  it('lets every staff role see training restrictions, but only a physio the injury behind them (#21)', () => {
+    expect(canView('COACH', 'RESTRICTIONS')).toBe(true);
+    expect(canView('SC_COACH', 'RESTRICTIONS')).toBe(true);
+    expect(canView('PHYSIO', 'RESTRICTIONS')).toBe(true);
+    expect(canView('ATHLETE', 'RESTRICTIONS')).toBe(false);
   });
 
   it('gives a coach wellness status but not individual scores', () => {

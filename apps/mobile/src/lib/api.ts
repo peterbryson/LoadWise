@@ -1,11 +1,20 @@
 import { HEALTH_DATA_NOTICE_VERSION } from '@loadwise/shared';
 import type {
+  CreatedTeamSession,
   CreateSquad,
+  CreateTeamSession,
+  LoadDetail,
+  InjuryRecord,
   LoadTotals,
   MyLoad,
+  RecordInjury,
+  RecordRestriction,
   SessionLog,
   SquadOverview,
   StaffRole,
+  RateTeamSession,
+  TeamSessionToRate,
+  TrainingRestriction,
   WellnessCheck,
 } from '@loadwise/shared';
 import type { Flag, FlagChecks, WellnessTrendPoint } from '@loadwise/analytics';
@@ -43,6 +52,14 @@ export type MySquad =
 export type SquadMember =
   | { userId: string; displayName: string; role: 'ATHLETE'; consentGiven: boolean }
   | { userId: string; displayName: string; role: StaffRole };
+
+/** #49: a squad's invite code, for its staff. Only a COACH may replace it (`canReplace`). */
+export interface SquadInvite {
+  squadId: string;
+  squadName: string;
+  inviteCode: string;
+  canReplace: boolean;
+}
 
 /** The athlete's sharing state for one squad, from `PUT /squads/:squadId/consent`. */
 export interface SquadConsentState {
@@ -91,6 +108,16 @@ export interface WellnessTrend {
   minCheckIns: number;
   /** Oldest first; the last week ends today. */
   weeks: WellnessTrendPoint[];
+}
+
+/** #51: one wellness check-in as staff with WELLNESS_SCORES see it. Scores are 1 (worst) to 5 (best). */
+export interface StaffWellnessEntry {
+  /** YYYY-MM-DD. */
+  date: string;
+  sleep: number;
+  soreness: number;
+  fatigue: number;
+  stress: number;
 }
 
 interface ApiClientOptions {
@@ -149,6 +176,12 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     /** #2 AC3: a squad's members. 403 for athletes, 404 if the caller is not in the squad. */
     squadMembers: (squadId: string) =>
       request<SquadMember[]>('GET', `/squads/${encodeURIComponent(squadId)}/members`),
+    /** #49 AC1: the squad's current invite code. 403 for athletes, 404 if the caller is not in the squad. */
+    squadInvite: (squadId: string) =>
+      request<SquadInvite>('GET', `/squads/${encodeURIComponent(squadId)}/invite-code`),
+    /** #49 AC3: a coach replaces the squad's invite code; the old code stops joining the squad. */
+    replaceInviteCode: (squadId: string) =>
+      request<SquadInvite>('POST', `/squads/${encodeURIComponent(squadId)}/invite-code`),
     /** #3: start or stop sharing the athlete's data with one squad. Repeating a request changes nothing. */
     setSquadConsent: (squadId: string, share: boolean) =>
       request<SquadConsentState>('PUT', `/squads/${encodeURIComponent(squadId)}/consent`, { share }),
@@ -174,11 +207,53 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
         'GET',
         `/squads/${encodeURIComponent(squadId)}/athletes/${encodeURIComponent(athleteId)}/load`,
       ),
+    /** #51 (I-28): monotony and strain from the athlete's combined sessions. S&C coaches and physios only. */
+    athleteLoadDetail: (squadId: string, athleteId: string) =>
+      request<LoadDetail>(
+        'GET',
+        `/squads/${encodeURIComponent(squadId)}/athletes/${encodeURIComponent(athleteId)}/load-detail`,
+      ),
+    /** #51: the athlete's last 28 wellness check-ins, newest first. Roles with WELLNESS_SCORES only. */
+    athleteWellness: (squadId: string, athleteId: string) =>
+      request<StaffWellnessEntry[]>(
+        'GET',
+        `/squads/${encodeURIComponent(squadId)}/athletes/${encodeURIComponent(athleteId)}/wellness`,
+      ),
     /** #9: today's flags, each with its reason, value and threshold. */
     myFlags: () => request<CurrentFlags>('GET', '/me/flags'),
     /** #9 AC3: wellness 7-day averages against baseline for the Trends tab. */
     myWellnessTrend: () => request<WellnessTrend>('GET', '/me/wellness-trend'),
+    /** #17 AC1: a coach or S&C coach logs a team session once for the squad. */
+    createTeamSession: (squadId: string, input: CreateTeamSession) =>
+      request<CreatedTeamSession>('POST', `/squads/${encodeURIComponent(squadId)}/team-sessions`, input),
+    /** #17 AC2: team sessions from the athlete's squads that they have not yet added an RPE to. */
+    teamSessionsToRate: () => request<TeamSessionToRate[]>('GET', '/team-sessions/to-rate'),
+    /** #17 AC2: the athlete's RPE for a team session, saved as their own session. 409 if already rated. */
+    rateTeamSession: (teamSessionId: string, input: RateTeamSession) =>
+      request<SavedSession>('POST', `/team-sessions/${encodeURIComponent(teamSessionId)}/rating`, input),
+    /** #21: injuries recorded in this squad. Physio only. */
+    athleteInjuries: (squadId: string, athleteId: string) =>
+      request<InjuryRecord[]>('GET', `${athletePath(squadId, athleteId)}/injuries`),
+    /** #21 AC1: a physio records an injury for this athlete in this squad. */
+    recordInjury: (squadId: string, athleteId: string, input: RecordInjury) =>
+      request<InjuryRecord>('POST', `${athletePath(squadId, athleteId)}/injuries`, input),
+    /** #21 AC2: active training restrictions, for every staff role in the squad. */
+    athleteRestrictions: (squadId: string, athleteId: string) =>
+      request<TrainingRestriction[]>('GET', `${athletePath(squadId, athleteId)}/restrictions`),
+    /** #21 AC1: a physio sets a restriction that the squad's coaches will see. */
+    addRestriction: (squadId: string, athleteId: string, input: RecordRestriction) =>
+      request<TrainingRestriction>('POST', `${athletePath(squadId, athleteId)}/restrictions`, input),
+    /** #21: a physio ends a restriction. Repeating it changes nothing. */
+    endRestriction: (squadId: string, athleteId: string, restrictionId: string) =>
+      request<TrainingRestriction>(
+        'POST',
+        `${athletePath(squadId, athleteId)}/restrictions/${encodeURIComponent(restrictionId)}/end`,
+      ),
   };
+}
+
+function athletePath(squadId: string, athleteId: string): string {
+  return `/squads/${encodeURIComponent(squadId)}/athletes/${encodeURIComponent(athleteId)}`;
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>;

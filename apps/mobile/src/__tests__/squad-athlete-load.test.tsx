@@ -6,15 +6,19 @@ import { renderScreen } from '@/test-utils';
 import SquadAthleteLoadScreen from '@/app/squad-athlete-load';
 
 const mockAthleteLoad = jest.fn();
+// #51: the screen looks up the viewer's role; these tests view it as a coach.
+const mockMySquads = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => ({ squadId: 'sq-1', athleteId: 'a1', name: 'Athlete One' }),
 }));
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  createApiClient: () => ({ athleteLoad: mockAthleteLoad }),
+  createApiClient: () => ({ athleteLoad: mockAthleteLoad, mySquads: mockMySquads }),
 }));
 jest.mock('@/lib/auth', () => ({ useAuth: jest.fn() }));
+// #21's section loads its own data and is tested in injury-restrictions.test.tsx.
+jest.mock('@/components/injuries/InjuryRestrictionsSection', () => ({ InjuryRestrictionsSection: () => null }));
 
 function totals(overrides: Partial<LoadTotals> = {}): LoadTotals {
   return {
@@ -36,6 +40,7 @@ function totals(overrides: Partial<LoadTotals> = {}): LoadTotals {
 describe('FR2: staff see an athlete’s combined load (#8 AC2)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockMySquads.mockResolvedValue([{ squadId: 'sq-1', squadName: 'Harriers', role: 'COACH', inviteCode: 'ABCD2345' }]);
     jest.mocked(useAuth).mockReturnValue({
       user: { uid: 'staff' } as never,
       loading: false,

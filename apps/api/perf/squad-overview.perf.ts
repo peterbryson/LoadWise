@@ -168,6 +168,14 @@ describe('NFR3.1: squad overview for 40 athletes with a full season (#10 AC2)', 
     await timedGet(); // warm-up: first request pays for connection and code loading
   });
 
+  it('includes who has logged today (#50 AC1), so the timings below cover it', async () => {
+    const res = await request(app.getHttpServer()).get(`/squads/${SQUAD_ID}/overview`).set({ Authorization: 'Bearer perf' });
+    // The season has a check-in every day, and no sessions on Wednesdays: today (25 Nov) is a Wednesday.
+    for (const athlete of res.body.athletes) {
+      expect(athlete.logging).toEqual({ checkedInToday: true, lastSessionDate: '2026-11-24' });
+    }
+  });
+
   it(`has p95 under ${P95_TARGET_MS} ms for one staff user, ${SEQUENTIAL_REQUESTS} requests in a row`, async () => {
     const times: number[] = [];
     for (let i = 0; i < SEQUENTIAL_REQUESTS; i++) times.push(await timedGet());

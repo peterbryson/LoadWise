@@ -23,7 +23,8 @@ jest.mock('expo-router', () => {
 });
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  createApiClient: () => ({ recentSessions: mockRecentSessions, myFlags: mockMyFlags }),
+  // #17: no team sessions to rate in these tests; that card is tested in team-sessions-to-rate.test.tsx.
+  createApiClient: () => ({ recentSessions: mockRecentSessions, myFlags: mockMyFlags, teamSessionsToRate: () => Promise.resolve([]) }),
 }));
 jest.mock('@/lib/auth', () => ({ useAuth: jest.fn() }));
 jest.mock('@/lib/offline-sync', () => ({ useOfflineSync: jest.fn() }));

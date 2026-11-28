@@ -25,7 +25,8 @@ jest.mock('expo-router', () => {
 });
 jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
-  createApiClient: () => ({ myFlags: mockMyFlags, recentSessions: mockRecentSessions }),
+  // #17: no team sessions to rate in these tests; that card is tested in team-sessions-to-rate.test.tsx.
+  createApiClient: () => ({ myFlags: mockMyFlags, recentSessions: mockRecentSessions, teamSessionsToRate: () => Promise.resolve([]) }),
 }));
 jest.mock('@/lib/auth', () => ({ useAuth: jest.fn() }));
 // Today also shows the offline sync card (#6); these tests are about flags, so nothing is waiting.
