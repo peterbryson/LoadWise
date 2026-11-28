@@ -26,6 +26,8 @@ describe('FR4: squad members for staff (#2 AC3)', () => {
       signIn: jest.fn(),
       createAccount: jest.fn(),
       resetPassword: jest.fn(),
+      confirmPassword: jest.fn(),
+      deleteSignIn: jest.fn(),
       signOut: jest.fn(),
       getIdToken: jest.fn(),
     });

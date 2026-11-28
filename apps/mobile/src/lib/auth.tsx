@@ -1,6 +1,9 @@
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
+  EmailAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
@@ -18,6 +21,13 @@ interface AuthValue {
   createAccount: (email: string, password: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** #14: checks the password again, as Firebase requires a recent sign-in to delete one. */
+  confirmPassword: (password: string) => Promise<void>;
+  /**
+   * #14: removes the Firebase sign-in itself, which also signs the user out. Firebase may refuse
+   * with auth/requires-recent-login if they signed in long ago.
+   */
+  deleteSignIn: () => Promise<void>;
   /** A fresh Firebase ID token for the API's Authorization header. */
   getIdToken: () => Promise<string>;
 }
@@ -49,6 +59,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       resetPassword: (email) => sendPasswordResetEmail(firebaseAuth(), email),
       signOut: () => firebaseSignOut(firebaseAuth()),
+      confirmPassword: async (password) => {
+        if (!user?.email) throw new Error('Not signed in');
+        await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+      },
+      deleteSignIn: async () => {
+        if (!user) throw new Error('Not signed in');
+        await deleteUser(user);
+      },
       getIdToken: async () => {
         if (!user) throw new Error('Not signed in');
         return user.getIdToken();

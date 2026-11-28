@@ -48,6 +48,8 @@ describe('FR2: staff see an athlete’s combined load (#8 AC2)', () => {
       signIn: jest.fn(),
       createAccount: jest.fn(),
       resetPassword: jest.fn(),
+      confirmPassword: jest.fn(),
+      deleteSignIn: jest.fn(),
       signOut: jest.fn(),
       getIdToken: jest.fn(),
     });

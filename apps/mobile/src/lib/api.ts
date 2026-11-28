@@ -156,7 +156,7 @@ async function readError(response: Response): Promise<ApiError> {
 }
 
 export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiClientOptions) {
-  async function request<T>(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown, signedIn = true): Promise<T> {
+  async function request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, body?: unknown, signedIn = true): Promise<T> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (signedIn) headers.Authorization = `Bearer ${await getIdToken()}`;
 
@@ -171,6 +171,7 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
       throw new ApiError(0, "Can't reach the LoadWise API. Check it is running and try again.");
     }
     if (!response.ok) throw await readError(response);
+    if (response.status === 204) return undefined as T;
     return (await response.json()) as T;
   }
 
@@ -193,6 +194,8 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
     setSquadConsent: (squadId: string, share: boolean) =>
       request<SquadConsentState>('PUT', `/squads/${encodeURIComponent(squadId)}/consent`, { share }),
     me: () => request<Me>('GET', '/me'),
+    /** #14: deletes the signed-in user's account and all their data (204). */
+    deleteAccount: () => request<void>('DELETE', '/me'),
     /** #1 AC4: records consent to the notice version this app shows at setup. */
     giveHealthConsent: () =>
       request<Me>('POST', '/me/health-consent', { noticeVersion: HEALTH_DATA_NOTICE_VERSION }),

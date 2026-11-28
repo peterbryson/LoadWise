@@ -21,6 +21,8 @@ function signedInAs(uid: string | null) {
     signIn: jest.fn(),
     createAccount: jest.fn(),
     resetPassword: jest.fn(),
+    confirmPassword: jest.fn(),
+    deleteSignIn: jest.fn(),
     signOut: jest.fn(),
     getIdToken,
   });

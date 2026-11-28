@@ -122,8 +122,8 @@ export default function ProfileScreen() {
       <Button
         label="Delete account and data"
         variant="danger"
-        disabled
-        accessibilityHint="Arrives with story 14"
+        accessibilityHint="Explains what is deleted and asks for your password first"
+        onPress={() => router.push('/delete-account')}
       />
     </Screen>
   );

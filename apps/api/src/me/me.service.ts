@@ -54,4 +54,23 @@ export class MeService {
     });
     return this.get(userId);
   }
+
+  /**
+   * #14, UK GDPR Art. 17: erases the user and every record that is theirs, in one statement.
+   * Deleting the User row lets PostgreSQL's foreign keys do the work (schema.prisma): their
+   * memberships and squad consent history, health-consent history, sessions, check-ins, injuries,
+   * restrictions and flags all cascade. Records they made about someone else (an injury or
+   * restriction logged as staff, a team session) belong to that athlete or squad, so those stay and
+   * only lose the link to the deleted user (SET NULL).
+   *
+   * The alternative, deleting table by table in a transaction, would need changing for every new
+   * table, and a forgotten one would leave data behind; a cascade cannot forget a table that has a
+   * foreign key to User. The real-PostgreSQL test (integration/account-deletion.int.ts) checks it.
+   *
+   * The Firebase sign-in is removed by the app afterwards (DL-035): the API's Firebase Admin setup
+   * has no service account, and Firebase holds only the email address and name.
+   */
+  async deleteAccount(userId: string): Promise<void> {
+    await this.prisma.user.delete({ where: { id: userId } });
+  }
 }

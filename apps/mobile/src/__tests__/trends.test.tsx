@@ -56,6 +56,8 @@ describe('FR2: Trends shows weekly load and ACWR (#7 AC3)', () => {
       signIn: jest.fn(),
       createAccount: jest.fn(),
       resetPassword: jest.fn(),
+      confirmPassword: jest.fn(),
+      deleteSignIn: jest.fn(),
       signOut: jest.fn(),
       getIdToken: jest.fn(),
     });
