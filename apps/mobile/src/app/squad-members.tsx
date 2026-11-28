@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
+import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
@@ -120,11 +121,14 @@ function MemberRow({ member, onOpen }: { member: SquadMember; onOpen?: () => voi
         : 'Not sharing data with this squad'
       : roleLabels[member.role];
   const text = (
-    <View style={styles.text}>
-      <AppText variant="body">{member.displayName}</AppText>
-      <AppText variant="caption" color="textMuted">
-        {detail}
-      </AppText>
+    <View style={styles.person}>
+      <Avatar name={member.displayName} size={36} />
+      <View style={styles.text}>
+        <AppText variant="body">{member.displayName}</AppText>
+        <AppText variant="caption" color="textMuted">
+          {detail}
+        </AppText>
+      </View>
     </View>
   );
 
@@ -148,13 +152,14 @@ function MemberRow({ member, onOpen }: { member: SquadMember; onOpen?: () => voi
         accessibilityHint="Opens their combined load"
       >
         {text}
-        <Icon name="chevron-row" size={20} />
+        <Icon name="chevron-row" size={18} />
       </Pressable>
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
+  person: { flexDirection: 'row', alignItems: 'center', gap: 12, flexShrink: 1 },
   text: { gap: 2, flexShrink: 1 },
   // 44 px minimum height keeps the row a comfortable touch target (WCAG 2.2 target size).
   openRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },

@@ -120,6 +120,7 @@ export default function SquadInviteScreen() {
             <View
               accessible
               accessibilityLabel={`Invite code ${state.invite.inviteCode.split('').join(' ')}`}
+              style={[styles.codeBox, { backgroundColor: colors.surfaceRaised, borderColor: colors.input }]}
             >
               <AppText variant="display" style={styles.code} selectable>
                 {state.invite.inviteCode}
@@ -129,8 +130,14 @@ export default function SquadInviteScreen() {
               Athletes enter this code in LoadWise to join the squad. People who join with it only ever
               join as athletes, never as staff. Each athlete then chooses whether to share their data.
             </AppText>
-            <Button label="Copy code" onPress={() => void copy(state.invite.inviteCode)} />
-            <Button label="Share code" variant="secondary" onPress={() => void share(state.invite)} />
+            <View style={styles.pair}>
+              <View style={styles.flex}>
+                <Button label="Copy code" icon="copy" onPress={() => void copy(state.invite.inviteCode)} />
+              </View>
+              <View style={styles.flex}>
+                <Button label="Share code" variant="outline" icon="share" onPress={() => void share(state.invite)} />
+              </View>
+            </View>
             {feedback ? (
               <View accessibilityLiveRegion="polite">
                 <InlineMessage kind={feedback.kind} text={feedback.text} />
@@ -188,6 +195,9 @@ export default function SquadInviteScreen() {
 }
 
 const styles = StyleSheet.create({
-  code: { letterSpacing: 4, textAlign: 'center' },
+  code: { letterSpacing: 6, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  codeBox: { borderWidth: 1, borderStyle: 'dashed', borderRadius: 14, paddingVertical: 18 },
+  pair: { flexDirection: 'row', gap: 8 },
+  flex: { flex: 1 },
   confirm: { gap: 8 },
 });

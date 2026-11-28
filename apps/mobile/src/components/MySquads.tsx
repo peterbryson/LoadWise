@@ -121,8 +121,8 @@ export function MySquads({
 
       {state.kind === 'loaded'
         ? state.squads.map((squad) => (
-            <Card key={squad.squadId} tone="raised" gap={6}>
-              <AppText variant="heading">{squad.squadName}</AppText>
+            <Card key={squad.squadId} tone="raised" gap={10}>
+              <AppText variant="title">{squad.squadName}</AppText>
               {squad.role === 'ATHLETE' ? (
                 <SquadSharing api={api} squad={squad} onChanged={sharingChanged} />
               ) : (
@@ -135,28 +135,42 @@ export function MySquads({
                     accessibilityHint={`Shows each athlete's status and flags in ${squad.squadName}`}
                     onPress={() => onOpenOverview(squad)}
                   />
-                  {onLogTeamSession && TEAM_SESSION_CREATOR_ROLES.includes(squad.role) ? (
-                    <Button
-                      label="Log team session"
-                      variant="secondary"
-                      accessibilityHint={`Logs one session for ${squad.squadName}; each athlete adds their RPE`}
-                      onPress={() => onLogTeamSession(squad)}
-                    />
-                  ) : null}
-                  <Button
-                    label="View members"
-                    variant="secondary"
-                    accessibilityHint={`Lists the members of ${squad.squadName}`}
-                    onPress={() => onOpenMembers(squad)}
-                  />
-                  {onOpenInvite ? (
-                    <Button
-                      label="Invite athletes"
-                      variant="secondary"
-                      accessibilityHint={`Shows the invite code for ${squad.squadName} to copy or share`}
-                      onPress={() => onOpenInvite(squad)}
-                    />
-                  ) : null}
+                  <View style={styles.actions}>
+                    {onLogTeamSession && TEAM_SESSION_CREATOR_ROLES.includes(squad.role) ? (
+                      <View style={styles.action}>
+                        <Button
+                          label="Log team session"
+                          variant="outline"
+                          size="sm"
+                          icon="plus"
+                          accessibilityHint={`Logs one session for ${squad.squadName}; each athlete adds their RPE`}
+                          onPress={() => onLogTeamSession(squad)}
+                        />
+                      </View>
+                    ) : null}
+                    <View style={styles.action}>
+                      <Button
+                        label="View members"
+                        variant="outline"
+                        size="sm"
+                        icon="squad"
+                        accessibilityHint={`Lists the members of ${squad.squadName}`}
+                        onPress={() => onOpenMembers(squad)}
+                      />
+                    </View>
+                    {onOpenInvite ? (
+                      <View style={styles.action}>
+                        <Button
+                          label="Invite athletes"
+                          variant="outline"
+                          size="sm"
+                          icon="invite"
+                          accessibilityHint={`Shows the invite code for ${squad.squadName} to copy or share`}
+                          onPress={() => onOpenInvite(squad)}
+                        />
+                      </View>
+                    ) : null}
+                  </View>
                 </>
               )}
             </Card>
@@ -258,4 +272,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   confirm: { gap: 8 },
   roles: { gap: 2 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  action: { flexGrow: 1, flexBasis: '45%' },
 });

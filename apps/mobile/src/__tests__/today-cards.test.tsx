@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import type { MyLoad } from '@loadwise/shared';
 import { CheckInCard } from '@/components/today/CheckInCard';
 import { WeekLoadCard } from '@/components/today/WeekLoadCard';
@@ -102,8 +102,10 @@ describe('FR1 #45: morning check-in card on Today', () => {
       },
     ]);
     await renderScreen(<CheckInCard />);
+    // The queued entry shows before the failed request settles; let it settle inside act.
+    await act(async () => {});
 
-    expect(await screen.findByText('Waiting to sync')).toBeTruthy();
+    expect(screen.getByText('Waiting to sync')).toBeTruthy();
     expect(screen.getByLabelText('Fatigue 2 of 5')).toBeTruthy();
   });
 
@@ -160,8 +162,11 @@ describe('FR2 #45: This week on Today comes from GET /me/load', () => {
     mockRecentSessions.mockResolvedValue([]);
     await renderScreen(<WeekLoadCard />);
 
-    fireEvent.press(await screen.findByRole('button', { name: 'Try again' }));
-    expect(await screen.findByText('640')).toBeTruthy();
+    const tryAgain = await screen.findByRole('button', { name: 'Try again' });
+    await act(async () => {
+      fireEvent.press(tryAgain);
+    });
+    expect(screen.getByText('640')).toBeTruthy();
     expect(mockMyLoad).toHaveBeenCalledTimes(2);
   });
 });

@@ -3,6 +3,8 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
+import { Avatar } from '@/components/Avatar';
+import { Badge, BadgeTone } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
@@ -13,6 +15,7 @@ import { ApiError, apiBaseUrl, createApiClient } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { filterOverview, lastSessionText, OverviewFilter } from '@/lib/overview-filter';
 import { useTheme } from '@/theme/theme';
+import { radius } from '@/theme/tokens';
 
 type State =
   | { kind: 'loading' }
@@ -23,6 +26,13 @@ const STATUS_LABEL: Record<SharingAthlete['status'], string> = {
   flagged: 'Flagged',
   incomplete: 'Not fully checked',
   clear: 'No flags today',
+};
+
+/** Pill tone per status; the pill always shows the words above, with an icon for flagged. */
+const STATUS_TONE: Record<SharingAthlete['status'], BadgeTone> = {
+  flagged: 'warning',
+  incomplete: 'neutral',
+  clear: 'accent',
 };
 
 /**
@@ -148,12 +158,16 @@ interface OverviewProps {
 function Overview({ overview, filter, onFilter, refreshing, refreshError, onRefresh, onOpen }: OverviewProps) {
   const updated = (
     <>
-      <AppText variant="caption" color="textMuted">
-        {`Last updated ${clockTime(overview.generatedAt)}`}
-      </AppText>
+      <View style={styles.updatedRow}>
+        <AppText variant="caption" color="textMuted" style={styles.flex}>
+          {`Last updated ${clockTime(overview.generatedAt)}`}
+        </AppText>
+        {/* Pull to refresh is a gesture, so a button gives the same action to everyone (WCAG 2.5.1). */}
+        <View style={styles.refresh}>
+          <Button label="Refresh" variant="outline" size="sm" icon="refresh" loading={refreshing} onPress={onRefresh} />
+        </View>
+      </View>
       {refreshError ? <InlineMessage kind="error" text={refreshError} /> : null}
-      {/* Pull to refresh is a gesture, so a button gives the same action to everyone (WCAG 2.5.1). */}
-      <Button label="Refresh" variant="secondary" loading={refreshing} onPress={onRefresh} />
     </>
   );
 
@@ -185,7 +199,12 @@ function Overview({ overview, filter, onFilter, refreshing, refreshError, onRefr
 
   return (
     <>
-      <AppText variant="body" accessibilityRole="header">
+      <View style={styles.tiles} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        <CountTile label="Flagged" value={count('flagged')} tone="warning" />
+        <CountTile label="Not logged" value={count('not-logged')} tone="text" />
+        <CountTile label="Athletes" value={count('all')} tone="text" />
+      </View>
+      <AppText variant="caption" color="textMuted" accessibilityRole="header">
         {summary(overview.athletes)}
       </AppText>
       {updated}
@@ -200,11 +219,18 @@ function Overview({ overview, filter, onFilter, refreshing, refreshError, onRefr
           <SharingRow key={athlete.athleteId} athlete={athlete} today={overview.date} onOpen={() => onOpen(athlete)} />
         ) : (
           <Card key={athlete.athleteId} gap={2}>
-            <View accessible accessibilityLabel={`${athlete.displayName}, not sharing data with this squad`}>
-              <AppText variant="body">{athlete.displayName}</AppText>
-              <AppText variant="caption" color="textMuted">
-                Not sharing data with this squad
-              </AppText>
+            <View
+              style={styles.person}
+              accessible
+              accessibilityLabel={`${athlete.displayName}, not sharing data with this squad`}
+            >
+              <Avatar name={athlete.displayName} size={36} />
+              <View style={styles.text}>
+                <AppText variant="body">{athlete.displayName}</AppText>
+                <AppText variant="caption" color="textMuted">
+                  Not sharing data with this squad
+                </AppText>
+              </View>
             </View>
           </Card>
         ),
@@ -238,26 +264,44 @@ function SharingRow({ athlete, today, onOpen }: { athlete: SharingAthlete; today
         accessibilityLabel={label}
         accessibilityHint="Opens their combined load"
       >
+        <Avatar name={athlete.displayName} size={36} />
         <View style={styles.text}>
           <View style={styles.titleRow}>
-            <AppText variant="heading">{athlete.displayName}</AppText>
-            <AppText variant="caption" color={athlete.status === 'flagged' ? 'text' : 'textMuted'}>
-              {status}
+            <AppText variant="heading" style={styles.flex}>
+              {athlete.displayName}
             </AppText>
+            <Badge label={status} tone={STATUS_TONE[athlete.status]} icon={athlete.status === 'clear' ? null : undefined} />
           </View>
           {notes.map((note) => (
             <AppText key={note} variant="body">
               {note}
             </AppText>
           ))}
-          <AppText variant="body">{logged}</AppText>
+          <AppText variant="caption" color={athlete.logging.checkedInToday ? 'textMuted' : 'text'}>
+            {logged}
+          </AppText>
           <AppText variant="caption" color="textMuted">
             {load}
           </AppText>
         </View>
-        <Icon name="chevron-row" size={20} />
+        <Icon name="chevron-row" size={18} />
       </Pressable>
     </Card>
+  );
+}
+
+/** A count above the list; decorative, as the summary line under it says the same in words. */
+function CountTile({ label, value, tone }: { label: string; value: number; tone: 'warning' | 'text' }) {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <AppText variant="metric" color={tone === 'warning' && value > 0 ? 'warning' : 'text'}>
+        {value}
+      </AppText>
+      <AppText variant="caption" color="textMuted">
+        {label}
+      </AppText>
+    </View>
   );
 }
 
@@ -319,7 +363,13 @@ function errorMessage(error: unknown): string {
 
 const styles = StyleSheet.create({
   // 44 px minimum height keeps each row a comfortable touch target (WCAG 2.2 target size).
-  row: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  text: { gap: 4, flexShrink: 1 },
+  row: { minHeight: 44, flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  person: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  text: { gap: 3, flex: 1 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  flex: { flex: 1 },
+  tiles: { flexDirection: 'row', gap: 8 },
+  tile: { flex: 1, borderWidth: 1, borderRadius: radius.lg, paddingVertical: 12, paddingHorizontal: 12, gap: 2 },
+  updatedRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  refresh: { width: 124 },
 });
