@@ -1,25 +1,18 @@
-import { CreateSquadSchema, JoinSquadSchema, StaffRole } from '@loadwise/shared';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { InlineMessage } from '@/components/InlineMessage';
 import { ListGroup, ListRow } from '@/components/ListRow';
 import { MySquads } from '@/components/MySquads';
 import { OptionRow } from '@/components/Option';
 import { Screen } from '@/components/Screen';
-import { TextField } from '@/components/TextField';
-import { ApiError, apiBaseUrl, createApiClient } from '@/lib/api';
+import { CreateSquadForm, JoinSquadForm } from '@/components/SquadForms';
+import { apiBaseUrl, createApiClient } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useConsent } from '@/lib/consent';
 import { ThemePreference, useTheme } from '@/theme/theme';
-
-const roles = [
-  { value: 'COACH', label: 'Coach' },
-  { value: 'PHYSIO', label: 'Physio' },
-  { value: 'SC_COACH', label: 'S&C', accessibilityLabel: 'S and C coach' },
-] as const;
 
 const themes = [
   { value: 'system', label: 'System' },
@@ -27,15 +20,16 @@ const themes = [
   { value: 'dark', label: 'Dark' },
 ] as const;
 
-type Result = { kind: 'error' | 'info'; text: string } | null;
-
-function errorText(error: unknown): string {
-  return error instanceof ApiError ? error.message : 'Something went wrong. Try again.';
-}
-
+/**
+ * Account and settings. Squads the user plays in (with their sharing switches) and joining a squad
+ * stay here; squads they support as staff are on the Squad tab (#48 AC3). A staff-only user is
+ * offered to log their own training instead, which asks for health-data consent first (#48 AC5).
+ */
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut, getIdToken } = useAuth();
+  const { status, hasStaffSquad, markStaffSquad } = useConsent();
+  const logsOwnTraining = status === 'given';
   const { colors, preference, setPreference } = useTheme();
   const api = useMemo(() => createApiClient({ baseUrl: apiBaseUrl, getIdToken }), [getIdToken]);
   const [squadsVersion, setSquadsVersion] = useState(0);
@@ -73,30 +67,47 @@ export default function ProfileScreen() {
         <ListRow label="Reminders" />
       </ListGroup>
 
-      <MySquads
-        api={api}
-        refreshKey={squadsVersion}
-        onOpenMembers={(squad) =>
-          router.push({
-            pathname: '/squad-members',
-            params: { squadId: squad.squadId, squadName: squad.squadName },
-          })
-        }
-        onOpenOverview={(squad) =>
-          router.push({
-            pathname: '/squad-overview',
-            params: { squadId: squad.squadId, squadName: squad.squadName },
-          })
-        }
-        onLogTeamSession={(squad) =>
-          router.push({
-            pathname: '/log-team-session',
-            params: { squadId: squad.squadId, squadName: squad.squadName },
-          })
-        }
-      />
-
-      <SquadTools api={api} onChanged={() => setSquadsVersion((n) => n + 1)} />
+      {logsOwnTraining ? (
+        <>
+          <MySquads
+            api={api}
+            only="athlete"
+            refreshKey={squadsVersion}
+            onOpenMembers={(squad) =>
+              router.push({
+                pathname: '/squad-members',
+                params: { squadId: squad.squadId, squadName: squad.squadName },
+              })
+            }
+            onOpenOverview={(squad) =>
+              router.push({
+                pathname: '/squad-overview',
+                params: { squadId: squad.squadId, squadName: squad.squadName },
+              })
+            }
+          />
+          <JoinSquadForm api={api} onJoined={() => setSquadsVersion((n) => n + 1)} />
+          {hasStaffSquad ? null : (
+            <CreateSquadForm api={api} heading="Support a squad as staff" onCreated={markStaffSquad} />
+          )}
+        </>
+      ) : (
+        <Card gap={10}>
+          <AppText variant="heading" accessibilityRole="header">
+            Log your own training
+          </AppText>
+          <AppText variant="caption" color="textMuted">
+            You use LoadWise as staff only, so LoadWise holds no health data about you. To log your
+            own sessions and wellness, or join a squad as an athlete, agree to health-data processing
+            first.
+          </AppText>
+          <Button
+            label="Start logging my training"
+            variant="secondary"
+            onPress={() => router.push({ pathname: '/setup', params: { start: 'consent' } })}
+          />
+        </Card>
+      )}
 
       <Card gap={10}>
         <AppText variant="heading">Preview tools</AppText>
@@ -119,96 +130,6 @@ export default function ProfileScreen() {
         accessibilityHint="Arrives with story 14"
       />
     </Screen>
-  );
-}
-
-/**
- * Not in the Figma V1 design: a plain section that calls the real squad endpoints (#2), so the
- * API can be seen working from the app. Inputs are checked with the same Zod schemas as the API.
- */
-function SquadTools({ api, onChanged }: { api: ReturnType<typeof createApiClient>; onChanged: () => void }) {
-  const [apiUp, setApiUp] = useState<boolean | null>(null);
-  const [squadName, setSquadName] = useState('');
-  const [role, setRole] = useState<StaffRole>('COACH');
-  const [code, setCode] = useState('');
-  const [busy, setBusy] = useState<'create' | 'join' | null>(null);
-  const [result, setResult] = useState<Result>(null);
-
-  useEffect(() => {
-    api
-      .health()
-      .then(() => setApiUp(true))
-      .catch(() => setApiUp(false));
-  }, [api]);
-
-  async function create() {
-    const parsed = CreateSquadSchema.safeParse({ name: squadName, role });
-    if (!parsed.success) {
-      return setResult({ kind: 'error', text: 'Squad names are 2 to 60 characters.' });
-    }
-    setBusy('create');
-    try {
-      const squad = await api.createSquad(parsed.data);
-      setResult({ kind: 'info', text: `Created "${squad.name}". Invite code: ${squad.inviteCode}` });
-      setSquadName('');
-      onChanged();
-    } catch (error) {
-      setResult({ kind: 'error', text: errorText(error) });
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function join() {
-    const parsed = JoinSquadSchema.safeParse({ inviteCode: code });
-    if (!parsed.success) {
-      return setResult({ kind: 'error', text: 'Invite codes are 8 letters and numbers.' });
-    }
-    setBusy('join');
-    try {
-      const joined = await api.joinSquad(parsed.data.inviteCode);
-      setResult({ kind: 'info', text: `Joined "${joined.squadName}" as an athlete.` });
-      setCode('');
-      onChanged();
-    } catch (error) {
-      setResult({ kind: 'error', text: errorText(error) });
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  return (
-    <Card gap={10}>
-      <AppText variant="heading">Squads</AppText>
-      <AppText variant="caption" color="textMuted">
-        {apiUp === null
-          ? 'Checking the LoadWise API…'
-          : apiUp
-            ? 'Connected to the LoadWise API. These actions are real.'
-            : `Can't reach the LoadWise API at ${apiBaseUrl}. Start it with pnpm dev.`}
-      </AppText>
-
-      <TextField label="New squad name" value={squadName} onChangeText={setSquadName} placeholder="e.g. Belfast Harriers U20" />
-      <OptionRow
-        options={roles}
-        selected={role}
-        onSelect={(value) => setRole(value as StaffRole)}
-        accessibilityLabel="Your role in the squad"
-      />
-      <Button label="Create squad" onPress={create} loading={busy === 'create'} disabled={busy !== null} />
-
-      <TextField
-        label="Invite code"
-        value={code}
-        onChangeText={setCode}
-        placeholder="ABCD2345"
-        autoCapitalize="characters"
-        autoCorrect={false}
-      />
-      <Button label="Join squad" variant="secondary" onPress={join} loading={busy === 'join'} disabled={busy !== null} />
-
-      {result ? <InlineMessage kind={result.kind} text={result.text} /> : null}
-    </Card>
   );
 }
 

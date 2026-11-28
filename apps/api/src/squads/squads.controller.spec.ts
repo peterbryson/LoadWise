@@ -1,5 +1,6 @@
 import { INestApplication, UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { INVITE_CODE_PATTERN } from '@loadwise/shared';
 import { Prisma } from '@prisma/client';
 import request from 'supertest';
 import { AppModule } from '../app.module';
@@ -23,7 +24,7 @@ const fakeVerifier: TokenVerifier = {
 
 const prisma = {
   user: { findUnique: jest.fn(), create: jest.fn() },
-  squad: { create: jest.fn(), findUnique: jest.fn() },
+  squad: { create: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
   membership: { create: jest.fn(), findMany: jest.fn(), findUnique: jest.fn() },
 };
 
@@ -393,6 +394,185 @@ describe('squads API', () => {
     it('requires sign-in (401)', async () => {
       await request(app.getHttpServer()).get(`/squads/${SQUAD.id}/members`).expect(401);
       expect(prisma.membership.findUnique).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('FR4 #49: squad invite code for staff', () => {
+    // A real UUID, because these routes validate the squad id (#49 invalid input).
+    const SQUAD_ID = '6f1c2a3e-4b5d-4c6e-8f70-1a2b3c4d5e6f';
+    const squadRow = { id: SQUAD_ID, name: SQUAD.name, inviteCode: SQUAD.inviteCode };
+    const inviteUrl = `/squads/${SQUAD_ID}/invite-code`;
+
+    describe('GET /squads/:squadId/invite-code (AC1)', () => {
+      it.each([
+        ['COACH', true],
+        ['SC_COACH', false],
+        ['PHYSIO', false],
+      ])('gives a %s in the squad its current code (canReplace %s)', async (role, canReplace) => {
+        prisma.membership.findUnique.mockResolvedValue({ role });
+        prisma.squad.findUnique.mockResolvedValue(squadRow);
+
+        const res = await request(app.getHttpServer()).get(inviteUrl).set(asCoach).expect(200);
+
+        expect(res.body).toEqual({
+          squadId: SQUAD_ID,
+          squadName: SQUAD.name,
+          inviteCode: SQUAD.inviteCode,
+          canReplace,
+        });
+        expect(prisma.membership.findUnique).toHaveBeenCalledWith({
+          where: { userId_squadId: { userId: COACH.id, squadId: SQUAD_ID } },
+          select: { role: true },
+        });
+      });
+
+      it('refuses an athlete in the squad and never reads the code (AC4, 403)', async () => {
+        prisma.membership.findUnique.mockResolvedValue({ role: 'ATHLETE' });
+
+        const res = await request(app.getHttpServer()).get(inviteUrl).set(asAthlete).expect(403);
+
+        expect(res.body.message).toBe('Only staff in this squad can see this');
+        expect(JSON.stringify(res.body)).not.toContain(SQUAD.inviteCode);
+        expect(prisma.squad.findUnique).not.toHaveBeenCalled();
+      });
+
+      it('answers 404 to a non-member, so the squad id is not confirmed to exist (AC4)', async () => {
+        prisma.membership.findUnique.mockResolvedValue(null);
+
+        const res = await request(app.getHttpServer()).get(inviteUrl).set(asCoach).expect(404);
+
+        expect(res.body.message).toBe('Squad not found');
+        expect(prisma.squad.findUnique).not.toHaveBeenCalled();
+      });
+
+      it('rejects a squad id that is not a UUID with a clear error (400)', async () => {
+        const res = await request(app.getHttpServer())
+          .get('/squads/not-a-squad/invite-code')
+          .set(asCoach)
+          .expect(400);
+
+        expect(res.body.message).toBe('Validation failed');
+        expect(res.body.issues).toEqual([{ path: '', message: 'Invalid squad id' }]);
+        expect(prisma.membership.findUnique).not.toHaveBeenCalled();
+      });
+
+      it('requires sign-in (401)', async () => {
+        await request(app.getHttpServer()).get(inviteUrl).expect(401);
+        expect(prisma.membership.findUnique).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('POST /squads/:squadId/invite-code (AC3 replace the code)', () => {
+      it('gives the squad a new valid code, and the old code then no longer joins it', async () => {
+        // A small stateful fake: join looks the squad up by whatever code it currently has.
+        let currentCode = SQUAD.inviteCode;
+        prisma.membership.findUnique.mockResolvedValue({ role: 'COACH' });
+        prisma.squad.update.mockImplementation(({ data }: { data: { inviteCode: string } }) => {
+          currentCode = data.inviteCode;
+          return Promise.resolve({ ...squadRow, inviteCode: currentCode });
+        });
+        prisma.squad.findUnique.mockImplementation(({ where }: { where: { inviteCode: string } }) =>
+          Promise.resolve(where.inviteCode === currentCode ? { ...squadRow, inviteCode: currentCode } : null),
+        );
+
+        const res = await request(app.getHttpServer()).post(inviteUrl).set(asCoach).expect(200);
+
+        expect(res.body).toEqual({
+          squadId: SQUAD_ID,
+          squadName: SQUAD.name,
+          inviteCode: currentCode,
+          canReplace: true,
+        });
+        expect(res.body.inviteCode).toMatch(INVITE_CODE_PATTERN);
+        expect(prisma.squad.update).toHaveBeenCalledWith({
+          where: { id: SQUAD_ID },
+          data: { inviteCode: currentCode },
+          select: { id: true, name: true, inviteCode: true },
+        });
+
+        await request(app.getHttpServer())
+          .post('/squads/join')
+          .set(asAthlete)
+          .send({ inviteCode: SQUAD.inviteCode })
+          .expect(404);
+        const joined = await request(app.getHttpServer())
+          .post('/squads/join')
+          .set(asAthlete)
+          .send({ inviteCode: currentCode })
+          .expect(201);
+        // The new code, like the old one, only ever grants the ATHLETE role.
+        expect(joined.body.role).toBe('ATHLETE');
+      });
+
+      it.each(['SC_COACH', 'PHYSIO'])('refuses a %s in the squad (403)', async (role) => {
+        prisma.membership.findUnique.mockResolvedValue({ role });
+
+        const res = await request(app.getHttpServer()).post(inviteUrl).set(asCoach).expect(403);
+
+        expect(res.body.message).toBe('Only a coach in this squad can replace its invite code');
+        expect(prisma.squad.update).not.toHaveBeenCalled();
+      });
+
+      it('refuses an athlete in the squad (AC4, 403)', async () => {
+        prisma.membership.findUnique.mockResolvedValue({ role: 'ATHLETE' });
+
+        const res = await request(app.getHttpServer()).post(inviteUrl).set(asAthlete).expect(403);
+
+        expect(res.body.message).toBe('Only staff in this squad can see this');
+        expect(prisma.squad.update).not.toHaveBeenCalled();
+      });
+
+      it('answers 404 to a non-member (AC4)', async () => {
+        prisma.membership.findUnique.mockResolvedValue(null);
+
+        await request(app.getHttpServer()).post(inviteUrl).set(asCoach).expect(404);
+        expect(prisma.squad.update).not.toHaveBeenCalled();
+      });
+
+      it('rejects a squad id that is not a UUID with a clear error (400)', async () => {
+        const res = await request(app.getHttpServer())
+          .post('/squads/squad-1/invite-code')
+          .set(asCoach)
+          .expect(400);
+
+        expect(res.body.issues).toEqual([{ path: '', message: 'Invalid squad id' }]);
+        expect(prisma.squad.update).not.toHaveBeenCalled();
+      });
+
+      it('retries with another code if the new one is already taken by another squad', async () => {
+        prisma.membership.findUnique.mockResolvedValue({ role: 'COACH' });
+        prisma.squad.update
+          .mockRejectedValueOnce(uniqueViolation())
+          .mockResolvedValueOnce({ ...squadRow, inviteCode: 'WXYZ6789' });
+
+        const res = await request(app.getHttpServer()).post(inviteUrl).set(asCoach).expect(200);
+
+        expect(res.body.inviteCode).toBe('WXYZ6789');
+        expect(prisma.squad.update).toHaveBeenCalledTimes(2);
+      });
+
+      it('gives up after 3 collisions with a generic error (500)', async () => {
+        prisma.membership.findUnique.mockResolvedValue({ role: 'COACH' });
+        prisma.squad.update.mockRejectedValue(uniqueViolation());
+
+        const res = await request(app.getHttpServer()).post(inviteUrl).set(asCoach).expect(500);
+
+        expect(res.body.message).toBe('Something went wrong');
+        expect(prisma.squad.update).toHaveBeenCalledTimes(3);
+      });
+
+      it('does not retry on other database errors (500)', async () => {
+        prisma.membership.findUnique.mockResolvedValue({ role: 'COACH' });
+        prisma.squad.update.mockRejectedValue(new Error('connection lost'));
+
+        await request(app.getHttpServer()).post(inviteUrl).set(asCoach).expect(500);
+        expect(prisma.squad.update).toHaveBeenCalledTimes(1);
+      });
+
+      it('requires sign-in (401)', async () => {
+        await request(app.getHttpServer()).post(inviteUrl).expect(401);
+        expect(prisma.squad.update).not.toHaveBeenCalled();
+      });
     });
   });
 });
