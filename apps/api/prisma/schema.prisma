@@ -40,34 +40,38 @@ enum FlagRule {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  firebaseUid String   @unique
-  email       String   @unique
-  displayName String
-  createdAt   DateTime @default(now())
+  id              String    @id @default(uuid())
+  firebaseUid     String    @unique
+  email           String    @unique
+  displayName     String
+  createdAt       DateTime  @default(now())
   /// When the user agreed to health-data processing at first-time setup (DL-008). Null until then,
   /// and health-data writes are refused with 403. A cached copy of the latest HealthConsentEvent,
   /// only ever written in the same transaction as a new event.
   healthConsentAt DateTime?
 
   healthConsentEvents HealthConsentEvent[]
-  memberships     Membership[]
-  sessions        Session[]
-  wellnessEntries WellnessEntry[]
-  injuries        Injury[]        @relation("InjuryAthlete")
-  injuriesLogged  Injury[]        @relation("InjuryRecordedBy")
-  flags           Flag[]
-  teamSessionsLogged TeamSession[] @relation("TeamSessionCreatedBy")
+  memberships         Membership[]
+  sessions            Session[]
+  wellnessEntries     WellnessEntry[]
+  injuries            Injury[]             @relation("InjuryAthlete")
+  injuriesLogged      Injury[]             @relation("InjuryRecordedBy")
+  restrictions        Restriction[]        @relation("RestrictionAthlete")
+  restrictionsSet     Restriction[]        @relation("RestrictionRecordedBy")
+  flags               Flag[]
+  teamSessionsLogged  TeamSession[]        @relation("TeamSessionCreatedBy")
 }
 
 model Squad {
-  id          String       @id @default(uuid())
-  name        String
-  inviteCode  String       @unique
-  createdAt   DateTime     @default(now())
-  memberships Membership[]
-  sessions    Session[]
+  id           String        @id @default(uuid())
+  name         String
+  inviteCode   String        @unique
+  createdAt    DateTime      @default(now())
+  memberships  Membership[]
+  sessions     Session[]
   teamSessions TeamSession[]
+  injuries     Injury[]
+  restrictions Restriction[]
 }
 
 /// A user's role in one squad. For athletes, consentGiven is the current consent state for this
@@ -187,11 +191,15 @@ model WellnessEntry {
   @@unique([athleteId, date])
 }
 
-/// #21 injuries and return to play. Recorded by a physio or the athlete; kept minimal on purpose
-/// (data minimisation, NFR 2). Never used to predict injury (#26 is a Won't).
+/// #21 injuries and return to play. Recorded by a physio; kept minimal on purpose (data
+/// minimisation, NFR 2). Never used to predict injury (#26 is a Won't).
 model Injury {
   id           String    @id @default(uuid())
   athleteId    String
+  /// #21 (I-14): the squad whose physio recorded it. Only that squad's physio can read it, and only
+  /// while the athlete shares with that squad, so sharing with a second squad never discloses what
+  /// the first squad's physio wrote. Null only for rows recorded before #21, which no squad can read.
+  squadId      String?
   recordedById String?
   bodyArea     String
   onsetDate    DateTime  @db.Date
@@ -200,10 +208,34 @@ model Injury {
   notes        String?
   createdAt    DateTime  @default(now())
 
-  athlete    User  @relation("InjuryAthlete", fields: [athleteId], references: [id], onDelete: Cascade)
-  recordedBy User? @relation("InjuryRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  athlete    User   @relation("InjuryAthlete", fields: [athleteId], references: [id], onDelete: Cascade)
+  squad      Squad? @relation(fields: [squadId], references: [id], onDelete: Cascade)
+  recordedBy User?  @relation("InjuryRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
 
-  @@index([athleteId])
+  @@index([athleteId, squadId])
+}
+
+/// #21: a short training restriction set by a squad's physio, such as "No contact training", that
+/// the squad's coaches and S&C coaches can see so they can plan around it. Deliberately a separate
+/// table with no link to Injury, so a query for coaches cannot reach clinical fields. Scoped to the
+/// squad like Injury. Set and ended only by a physio; LoadWise never sets, suggests or ends one.
+model Restriction {
+  id           String    @id @default(uuid())
+  athleteId    String
+  squadId      String
+  recordedById String?
+  description  String
+  /// The physio's planned review date. Shown to staff only; nothing happens automatically on it.
+  reviewOn     DateTime? @db.Date
+  /// Null while active. Set when the physio ends it; the row is kept, not deleted.
+  endedAt      DateTime?
+  createdAt    DateTime  @default(now())
+
+  athlete    User  @relation("RestrictionAthlete", fields: [athleteId], references: [id], onDelete: Cascade)
+  squad      Squad @relation(fields: [squadId], references: [id], onDelete: Cascade)
+  recordedBy User? @relation("RestrictionRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  @@index([athleteId, squadId])
 }
 
 /// FR 2 / #9: a pattern raised by the deterministic analytics engine, never by the LLM.
