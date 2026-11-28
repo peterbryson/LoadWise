@@ -1,140 +1,97 @@
-import { Image } from 'expo-image';
+import {
+  Activity,
+  Bandage,
+  Calendar,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleAlert,
+  CircleCheck,
+  CircleUser,
+  Clock,
+  CloudUpload,
+  Copy,
+  Dumbbell,
+  Flag,
+  House,
+  Info,
+  LucideIcon,
+  Plus,
+  RefreshCw,
+  Share2,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
+  TriangleAlert,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react-native';
 import { useTheme } from '@/theme/theme';
+import { ColorToken } from '@/theme/tokens';
 
-// The Figma file exports each icon already coloured for its theme, so both sets are bundled
-// and picked by theme rather than recoloured in code.
+/**
+ * Icons from Lucide (#52, DL-033), drawn with react-native-svg in the theme's colours. Each name
+ * has a default colour token, so call sites read the same in both themes. The V1 names
+ * (`alert-danger-16`, `chevron-row`, ...) are kept so screens did not change when the Figma SVG
+ * exports were replaced.
+ */
 const icons = {
-  'alert-danger-16': {
-    light: require('../../assets/icons/light/alert-danger-16.svg'),
-    dark: require('../../assets/icons/dark/alert-danger-16.svg'),
-  },
-  'alert-danger-18': {
-    light: require('../../assets/icons/light/alert-danger-18.svg'),
-    dark: require('../../assets/icons/dark/alert-danger-18.svg'),
-  },
-  'alert-warning-24': {
-    light: require('../../assets/icons/light/alert-warning-24.svg'),
-    dark: require('../../assets/icons/dark/alert-warning-24.svg'),
-  },
-  activity: {
-    light: require('../../assets/icons/light/activity.svg'),
-    dark: require('../../assets/icons/dark/activity.svg'),
-  },
-  shield: {
-    light: require('../../assets/icons/light/shield.svg'),
-    dark: require('../../assets/icons/dark/shield.svg'),
-  },
-  'info-accent': {
-    light: require('../../assets/icons/light/info-accent.svg'),
-    dark: require('../../assets/icons/dark/info-accent.svg'),
-  },
-  'info-muted': {
-    light: require('../../assets/icons/light/info-muted.svg'),
-    dark: require('../../assets/icons/dark/info-muted.svg'),
-  },
-  'check-on-accent': {
-    light: require('../../assets/icons/light/check-on-accent.svg'),
-    dark: require('../../assets/icons/dark/check-on-accent.svg'),
-  },
-  'check-status': {
-    light: require('../../assets/icons/light/check-status.svg'),
-    dark: require('../../assets/icons/dark/check-status.svg'),
-  },
-  'check-done': {
-    light: require('../../assets/icons/light/check-done.svg'),
-    dark: require('../../assets/icons/dark/check-done.svg'),
-  },
-  'chevron-warning': {
-    light: require('../../assets/icons/light/chevron-warning.svg'),
-    dark: require('../../assets/icons/dark/chevron-warning.svg'),
-  },
-  'chevron-date': {
-    light: require('../../assets/icons/light/chevron-date.svg'),
-    dark: require('../../assets/icons/dark/chevron-date.svg'),
-  },
-  'chevron-row': {
-    light: require('../../assets/icons/light/chevron-row.svg'),
-    dark: require('../../assets/icons/dark/chevron-row.svg'),
-  },
-  close: {
-    light: require('../../assets/icons/light/close.svg'),
-    dark: require('../../assets/icons/dark/close.svg'),
-  },
-  back: {
-    light: require('../../assets/icons/light/back.svg'),
-    dark: require('../../assets/icons/dark/back.svg'),
-  },
-  cloud: {
-    light: require('../../assets/icons/light/cloud.svg'),
-    dark: require('../../assets/icons/dark/cloud.svg'),
-  },
-  'today-active': {
-    light: require('../../assets/icons/light/today-active.svg'),
-    dark: require('../../assets/icons/dark/today-active.svg'),
-  },
-  'today-inactive': {
-    light: require('../../assets/icons/light/today-inactive.svg'),
-    dark: require('../../assets/icons/dark/today-inactive.svg'),
-  },
-  'trends-active': {
-    light: require('../../assets/icons/light/trends-active.svg'),
-    dark: require('../../assets/icons/dark/trends-active.svg'),
-  },
-  'trends-inactive': {
-    light: require('../../assets/icons/light/trends-inactive.svg'),
-    dark: require('../../assets/icons/dark/trends-inactive.svg'),
-  },
-  'profile-active': {
-    light: require('../../assets/icons/light/profile-active.svg'),
-    dark: require('../../assets/icons/dark/profile-active.svg'),
-  },
-  'profile-inactive': {
-    light: require('../../assets/icons/light/profile-inactive.svg'),
-    dark: require('../../assets/icons/dark/profile-inactive.svg'),
-  },
-  'squad-active': {
-    light: require('../../assets/icons/light/squad-active.svg'),
-    dark: require('../../assets/icons/dark/squad-active.svg'),
-  },
-  'squad-inactive': {
-    light: require('../../assets/icons/light/squad-inactive.svg'),
-    dark: require('../../assets/icons/dark/squad-inactive.svg'),
-  },
-  ai: {
-    light: require('../../assets/icons/light/ai.svg'),
-    dark: require('../../assets/icons/dark/ai.svg'),
-  },
-  'chart-guide': {
-    light: require('../../assets/icons/light/chart-guide.svg'),
-    dark: require('../../assets/icons/dark/chart-guide.svg'),
-  },
-  'chart-line': {
-    light: require('../../assets/icons/light/chart-line.svg'),
-    dark: require('../../assets/icons/dark/chart-line.svg'),
-  },
-} as const;
+  'alert-danger-16': { icon: CircleAlert, color: 'danger' },
+  'alert-danger-18': { icon: CircleAlert, color: 'danger' },
+  'alert-warning-24': { icon: TriangleAlert, color: 'warning' },
+  activity: { icon: Activity, color: 'accent' },
+  shield: { icon: ShieldCheck, color: 'accent' },
+  'info-accent': { icon: Info, color: 'accent' },
+  'info-muted': { icon: Info, color: 'textMuted' },
+  'check-on-accent': { icon: Check, color: 'onAccent' },
+  'check-status': { icon: CircleCheck, color: 'accent' },
+  'check-done': { icon: CircleCheck, color: 'accent' },
+  'chevron-warning': { icon: ChevronRight, color: 'warning' },
+  'chevron-date': { icon: ChevronDown, color: 'textMuted' },
+  'chevron-row': { icon: ChevronRight, color: 'textMuted' },
+  close: { icon: X, color: 'text' },
+  back: { icon: ChevronLeft, color: 'text' },
+  cloud: { icon: CloudUpload, color: 'textMuted' },
+  today: { icon: House, color: 'textMuted' },
+  trends: { icon: TrendingUp, color: 'textMuted' },
+  profile: { icon: CircleUser, color: 'textMuted' },
+  squad: { icon: Users, color: 'textMuted' },
+  ai: { icon: Sparkles, color: 'accent' },
+  plus: { icon: Plus, color: 'text' },
+  copy: { icon: Copy, color: 'text' },
+  share: { icon: Share2, color: 'text' },
+  refresh: { icon: RefreshCw, color: 'text' },
+  calendar: { icon: Calendar, color: 'textMuted' },
+  clock: { icon: Clock, color: 'textMuted' },
+  gym: { icon: Dumbbell, color: 'textMuted' },
+  flag: { icon: Flag, color: 'warning' },
+  invite: { icon: UserPlus, color: 'text' },
+  injury: { icon: Bandage, color: 'textMuted' },
+} satisfies Record<string, { icon: LucideIcon; color: ColorToken }>;
 
 export type IconName = keyof typeof icons;
 
 interface IconProps {
   name: IconName;
   size: number;
+  /** Overrides the icon's default colour, e.g. the active tab. */
+  color?: ColorToken;
+  strokeWidth?: number;
 }
 
 /** A decorative icon: screen readers skip it, so its meaning must also be in nearby text. */
-export function Icon({ name, size }: IconProps) {
-  const { name: theme } = useTheme();
+export function Icon({ name, size, color, strokeWidth = 2 }: IconProps) {
+  const { colors } = useTheme();
+  const { icon: Glyph, color: defaultColor } = icons[name];
   return (
-    <Image
-      source={icons[name][theme]}
-      style={{ width: size, height: size }}
-      contentFit="contain"
+    <Glyph
+      size={size}
+      color={colors[color ?? defaultColor]}
+      strokeWidth={strokeWidth}
       accessible={false}
+      importantForAccessibility="no-hide-descendants"
     />
   );
-}
-
-/** For non-square artwork such as the ratio chart lines. */
-export function themedArtwork(name: IconName, theme: 'light' | 'dark'): number {
-  return icons[name][theme];
 }
