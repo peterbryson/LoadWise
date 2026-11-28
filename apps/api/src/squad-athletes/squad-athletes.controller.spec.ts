@@ -101,7 +101,7 @@ describe('NFR2: staff views of one athlete (#11)', () => {
         { id: 'inj-1', bodyArea: 'Left hamstring', onsetDate: '2026-11-10', returnDate: null, notes: null },
       ]);
       expect(prisma.injury.findMany.mock.calls[0][0]).toMatchObject({
-        where: { athleteId: 'ath-1' },
+        where: { athleteId: 'ath-1', squadId: 'squad-1' },
         orderBy: { onsetDate: 'desc' },
       });
     });
@@ -137,6 +137,7 @@ describe('NFR2: staff views of one athlete (#11)', () => {
       });
       expect(prisma.injury.create.mock.calls[0][0].data).toEqual({
         athleteId: 'ath-1',
+        squadId: 'squad-1',
         recordedById: PHYSIO.id,
         bodyArea: 'Right ankle',
         onsetDate: new Date('2026-11-01'),
