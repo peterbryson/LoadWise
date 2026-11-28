@@ -18,6 +18,87 @@ Template:
 
 ---
 
+## DL-037: Cap Jest at 4 workers per package in CI
+
+- Date: 28 Nov 2026
+- Status: Proposed (made by Claude Code overnight under DL-034; Peter to accept)
+- Context: the `test` job on `main` failed three times in a row on 28 Nov (pipeline 8222) with no
+  code fault: first Jest's 5 s timeouts, then `exit code 143` (the container was killed). Jest starts
+  one worker per CPU core less one, and Turbo runs every package's tests at once, so on the 20-core
+  laptop runner (DL-003) about 38 Node processes shared Docker's memory limit (I-18, I-46).
+- Options considered:
+  - **Raise Jest's timeout.** Hides the symptom; the job was also being killed for memory.
+  - **Run packages one after another (`turbo --concurrency=1`).** Fixes memory, but every package
+    then runs alone and the job takes longer.
+  - **Give Docker more memory.** Takes RAM from Peter's laptop for everything else.
+  - **`pnpm test -- --maxWorkers=4` (chosen).** Each package's Jest uses at most 4 workers, so about
+    12 in all. No test, timeout, coverage or threshold setting changes.
+- Decision: chosen as above, in `.gitlab-ci.yml`. Local runs used the same setting all night: full
+  suite passed (157 analytics, 640 to 675 API, 393 to 403 mobile).
+- Consequences: whether CI is now reliable is not yet proven; the overnight merge request's pipeline is
+  the first test of it (I-46 stays open until then). If it still fails, `--concurrency=1` is next.
+
+---
+
+## DL-036: Demo data from a pure generator, checked against the real engine, seeded only into a demo-only database (#56)
+
+- Date: 28 Nov 2026
+- Status: Proposed (made by Claude Code overnight under DL-034; Peter to accept)
+- Context: the interim video (18 Jan 2027) must show the MVP working on staging with realistic data
+  and unhappy paths, and CLAUDE.md forbids real athlete data. The demo must show flags, which only
+  the deterministic engine may raise, on whatever day it is recorded.
+- Options considered:
+  - **A SQL dump.** Quick, but dates go stale (eight weeks before the dump, not before the demo) and
+    nothing proves the right athletes are flagged.
+  - **Seeding stored Flag rows.** Would show flags whatever the data says, which breaks the rule that
+    flags come only from the engine (DL-019: flags are calculated on each request).
+  - **Random data.** Different every run, so a flag could appear or vanish between rehearsal and video.
+  - **A deterministic generator for any "today", tested with `@loadwise/analytics` (chosen).** The
+    spec runs the engine over the generated data for all seven weekdays and checks that only the spike
+    athlete gets the ACWR flag and only the dip athlete the wellness flag.
+- Safety: the seed replaces every user and squad, so it refuses, writing nothing, if any user's email
+  is not on `example.com` (reserved for examples, RFC 2606). Checked against the local development
+  database: refused, exit 1. Demo logins are made by signing up in the app; the seed keeps their
+  Firebase UID, so they keep working across re-seeds without the API needing a Firebase service account.
+- Decision: `apps/api/src/demo/` (generator, seeder, `seed:demo` command) and a real-PostgreSQL test in
+  a scratch database (`integration/demo-seed.int.ts`).
+- Consequences: re-seed on the morning of a demo so the eight weeks end that day. Seeding staging is
+  not tried yet and needs any non-demo account there deleted first. Thresholds are still hypotheses
+  (DL-007): the demo shows the engine working, not that 1.5 is the right line.
+
+---
+
+## DL-035: Account deletion: the database cascade deletes the data, then the app removes the Firebase sign-in (#14)
+
+- Date: 28 Nov 2026
+- Status: Proposed (made by Claude Code overnight under DL-034; Peter to accept)
+- Context: #14 (Must, NFR 2) asks that all personal data is deleted on request (UK GDPR Art. 17) and
+  that this is verified absent from the database by test. DL-002 already made every user-owned table
+  cascade from `User`. The API's Firebase Admin setup has a project ID but no service account
+  (`firebase-token-verifier.ts`), so it cannot delete Firebase accounts.
+- Options considered:
+  - **Delete table by table in a transaction.** Explicit, but a table added later and forgotten here
+    would keep data after "deletion".
+  - **Anonymise instead of delete (keep rows, drop the name).** Keeps squad statistics, but training
+    and wellness rows are still health data about a person, so this is not erasure.
+  - **Delete the `User` row and let foreign keys cascade (chosen).** One statement; any table with a
+    foreign key to `User` is covered. Records the user made about someone else (an injury or
+    restriction logged as staff, a team session) belong to that athlete or squad, so they stay and lose
+    the link (`SET NULL`).
+  - **Firebase deletion:** by the API with a service account (another secret to hold and rotate), or
+    by the app with the client SDK, which needs a recent sign-in. Chosen: the app, after asking for
+    the password again, which also confirms the person means it.
+- Order: password, then `DELETE /me`, then this phone's unsynced queue (also health data), then the
+  Firebase sign-in. Firebase-first was rejected: if the API call then failed, health data would remain
+  with no way left to sign in and delete it.
+- Evidence: `integration/account-deletion.int.ts` against real PostgreSQL (3 passed locally): nothing
+  of a player-coach's left in any table, other people's records intact.
+- Consequences: the real-database test is opt-in (`test:db`) until CI has a database (I-2). Known gaps
+  in the issue log: a squad whose only coach leaves has no staff; a request arriving between the API
+  deletion and the Firebase deletion would create a new, empty user record.
+
+---
+
 ## DL-034: Overnight demo prototype on one integration branch, with local story branches and a single merge request
 
 - Date: 28 Nov 2026
