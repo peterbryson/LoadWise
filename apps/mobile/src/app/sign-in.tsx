@@ -3,11 +3,14 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { Icon } from '@/components/Icon';
 import { InlineMessage } from '@/components/InlineMessage';
 import { Screen } from '@/components/Screen';
 import { TextField } from '@/components/TextField';
 import { useAuth } from '@/lib/auth';
 import { authErrorMessage } from '@/lib/auth-errors';
+import { useTheme } from '@/theme/theme';
+import { radius } from '@/theme/tokens';
 
 type Action = 'sign-in' | 'create' | 'reset';
 
@@ -15,6 +18,7 @@ type Action = 'sign-in' | 'create' | 'reset';
 export default function SignInScreen() {
   const { user, configured, signIn, createAccount, resetPassword } = useAuth();
   const router = useRouter();
+  const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [pending, setPending] = useState<Action | null>(null);
@@ -55,7 +59,10 @@ export default function SignInScreen() {
   return (
     <Screen>
       <View style={styles.brand}>
-        <AppText variant="display" color="accent" accessibilityRole="header">
+        <View style={[styles.mark, { backgroundColor: colors.accent }]}>
+          <Icon name="activity" size={26} color="onAccent" strokeWidth={2.4} />
+        </View>
+        <AppText variant="display" accessibilityRole="header">
           LoadWise
         </AppText>
         <AppText variant="body" color="textMuted">
@@ -112,6 +119,7 @@ export default function SignInScreen() {
         disabled={!configured || pending !== null}
         accessibilityRole="button"
         hitSlop={12}
+        style={styles.reset}
       >
         <AppText variant="label" color="accent">
           Forgot password?
@@ -122,5 +130,14 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  brand: { gap: 4, paddingTop: 48, paddingBottom: 24 },
+  brand: { gap: 6, paddingTop: 40, paddingBottom: 20 },
+  mark: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  reset: { alignSelf: 'center', paddingVertical: 4 },
 });

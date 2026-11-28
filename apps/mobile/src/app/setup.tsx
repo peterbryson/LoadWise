@@ -157,16 +157,20 @@ function UseOption({
         styles.use,
         // A thicker border as well as the colour, so the choice is not shown by colour alone.
         selected
-          ? { borderWidth: 3, borderColor: colors.accent, backgroundColor: colors.surface }
-          : { borderWidth: 1.5, borderColor: colors.textMuted, backgroundColor: colors.surface },
+          ? { borderWidth: 2, borderColor: colors.accent, backgroundColor: colors.accentTint }
+          : { borderWidth: 1, borderColor: colors.input, backgroundColor: colors.surface },
       ]}
     >
-      <AppText variant="heading" color={selected ? 'accent' : 'text'}>
-        {label}
-      </AppText>
-      <AppText variant="caption" color="textMuted">
-        {hint}
-      </AppText>
+      <View style={styles.useText}>
+        <AppText variant="heading">{label}</AppText>
+        <AppText variant="caption" color="textMuted">
+          {hint}
+        </AppText>
+      </View>
+      {/* A radio mark as well as the border, so the choice is not shown by colour alone. */}
+      <View style={[styles.radio, { borderColor: selected ? colors.accent : colors.input }]}>
+        {selected ? <View style={[styles.radioDot, { backgroundColor: colors.accent }]} /> : null}
+      </View>
     </Pressable>
   );
 }
@@ -210,7 +214,9 @@ function ConsentStep({ api, title, onSaved, onBack }: ConsentStepProps) {
 
       {points.map((point) => (
         <Card key={point.title} style={styles.point}>
-          <Icon name={point.icon} size={24} />
+          <View style={[styles.pointIcon, { backgroundColor: colors.accentTint }]}>
+            <Icon name={point.icon} size={20} />
+          </View>
           <View style={styles.pointText}>
             <AppText variant="heading">{point.title}</AppText>
             <AppText variant="caption" color="textMuted">
@@ -231,7 +237,7 @@ function ConsentStep({ api, title, onSaved, onBack }: ConsentStepProps) {
             styles.checkbox,
             agreed
               ? { backgroundColor: colors.accent }
-              : { borderWidth: 1.5, borderColor: colors.textMuted, backgroundColor: colors.surface },
+              : { borderWidth: 1.5, borderColor: colors.input, backgroundColor: colors.surface },
           ]}
         >
           {agreed ? <Icon name="check-on-accent" size={18} /> : null}
@@ -252,10 +258,14 @@ function ConsentStep({ api, title, onSaved, onBack }: ConsentStepProps) {
 const styles = StyleSheet.create({
   header: { gap: 6 },
   uses: { gap: 10 },
-  use: { borderRadius: 12, padding: 14, gap: 4, minHeight: 48 },
+  use: { borderRadius: 14, padding: 16, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  useText: { flex: 1, gap: 4 },
+  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  radioDot: { width: 10, height: 10, borderRadius: 5 },
   point: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  pointIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   pointText: { flex: 1, gap: 4 },
   consent: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  checkbox: { width: 26, height: 26, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  checkbox: { width: 24, height: 24, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   consentText: { flex: 1 },
 });
