@@ -1,6 +1,6 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { CreateSquad, StaffRole } from '@loadwise/shared';
-import { StaffAccessService } from '../access/staff-access.service';
+import { SQUAD_NOT_FOUND, StaffAccessService } from '../access/staff-access.service';
 import { isUniqueViolation } from '../common/prisma-errors';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateInviteCode } from './invite-code';
@@ -30,6 +30,20 @@ export interface JoinedSquad {
   squadName: string;
   role: 'ATHLETE';
 }
+
+/**
+ * #49: a squad's invite code, for its staff. `canReplace` tells the app whether to offer the
+ * replace action; the API still checks the role on every replace request.
+ */
+export interface SquadInvite {
+  squadId: string;
+  squadName: string;
+  inviteCode: string;
+  canReplace: boolean;
+}
+
+// Names no squad or person, so the refusal reveals nothing beyond the caller's own role.
+export const COACH_ONLY_REPLACE = 'Only a coach in this squad can replace its invite code';
 
 /** A collision is astronomically unlikely, but the unique constraint makes it safe to retry. */
 const MAX_INVITE_CODE_ATTEMPTS = 3;
@@ -118,4 +132,52 @@ export class SquadsService {
         : { userId: user.id, displayName: user.displayName, role },
     );
   }
+
+  /** #49 AC1, AC4: the squad's current invite code. 404 for a non-member, 403 for an athlete. */
+  async inviteCode(viewerId: string, squadId: string): Promise<SquadInvite> {
+    const role = await this.access.requireStaff(viewerId, squadId);
+    const squad = await this.prisma.squad.findUnique({
+      where: { id: squadId },
+      select: { id: true, name: true, inviteCode: true },
+    });
+    // Membership was just found, so the squad exists unless it was deleted in between.
+    if (!squad) throw new NotFoundException(SQUAD_NOT_FOUND);
+    return toInvite(squad, role);
+  }
+
+  /**
+   * #49 AC3, AC4: replaces the squad's invite code with a new random one, so the old code no longer
+   * joins the squad (join looks squads up by their current code). Only a COACH in the squad may do
+   * this (DL-0XX); other staff get 403. Members who already joined are not affected.
+   */
+  async replaceInviteCode(viewerId: string, squadId: string): Promise<SquadInvite> {
+    const role = await this.access.requireStaff(viewerId, squadId);
+    if (role !== 'COACH') throw new ForbiddenException(COACH_ONLY_REPLACE);
+
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const squad = await this.prisma.squad.update({
+          where: { id: squadId },
+          data: { inviteCode: generateInviteCode() },
+          select: { id: true, name: true, inviteCode: true },
+        });
+        return toInvite(squad, role);
+      } catch (error) {
+        // Another squad already has this code: the unique constraint refused it, so try another.
+        if (!isUniqueViolation(error) || attempt >= MAX_INVITE_CODE_ATTEMPTS) throw error;
+      }
+    }
+  }
+}
+
+function toInvite(
+  squad: { id: string; name: string; inviteCode: string },
+  role: StaffRole,
+): SquadInvite {
+  return {
+    squadId: squad.id,
+    squadName: squad.name,
+    inviteCode: squad.inviteCode,
+    canReplace: role === 'COACH',
+  };
 }

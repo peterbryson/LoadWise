@@ -161,3 +161,34 @@ describe('NFR2: per-squad sharing switch (#3)', () => {
     expect(screen.queryByRole('switch')).toBeNull();
   });
 });
+
+describe('FR4 #49: invite athletes link on My squads', () => {
+  function renderWithInvite(mySquads: jest.Mock, onOpenInvite?: jest.Mock) {
+    return renderScreen(
+      <MySquads
+        api={{ mySquads, setSquadConsent: jest.fn() }}
+        refreshKey={0}
+        onOpenMembers={jest.fn()}
+        onOpenOverview={jest.fn()}
+        onOpenInvite={onOpenInvite}
+      />,
+    );
+  }
+
+  it('offers the invite screen only for squads where the caller is staff', async () => {
+    const onOpenInvite = jest.fn();
+    await renderWithInvite(jest.fn().mockResolvedValue([athleteSquad, coachSquad]), onOpenInvite);
+
+    const buttons = await screen.findAllByRole('button', { name: 'Invite athletes' });
+    expect(buttons).toHaveLength(1);
+    await fireEvent.press(buttons[0]);
+    expect(onOpenInvite).toHaveBeenCalledWith(coachSquad);
+  });
+
+  it('shows no invite link when the screen using My squads does not provide one', async () => {
+    await renderWithInvite(jest.fn().mockResolvedValue([coachSquad]));
+
+    expect(await screen.findByText('U20s')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Invite athletes' })).toBeNull();
+  });
+});
