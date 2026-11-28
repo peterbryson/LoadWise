@@ -9,24 +9,26 @@ in plain language. Coaches, S&C coaches and physios see a squad view with role- 
 consent-based access.
 
 > CSC3032 Software Engineering Project, Queen's University Belfast · Peter Bryson (40405392)
-> Status (3 Nov 2026): **Sprint 1, week 2.** See [`docs/design-plan.md`](docs/design-plan.md) for the week-by-week plan.
+> Status (28 Nov 2026): **continuous flow** towards the interim video on 18 Jan 2027. See
+> [`docs/design-plan.md`](docs/design-plan.md) for the plan.
 
 ### Current status
 
 | Area | State |
 | --- | --- |
-| MVP stories | All 11 built (25 Nov): #1 sign-in, #2 squads, #3 consent, #4 sessions, #5 wellness, #6 offline sync, #7 load metrics, #8 combined load, #9 flags, #10 squad overview, #11 role-based access. Not yet deployed to staging (I-19) |
-| API | NestJS with `/health` and a global auth guard. `GET /me`, `POST /me/health-consent`, `POST`/`GET /sessions` and `POST /wellness` (idempotent by `clientId`), `GET /me/load`, `GET /me/flags`, `GET /me/wellness-trend`, squads (create, join, list, members), `PUT /squads/:squadId/consent`, and role-based staff access to one athlete's wellness and injuries (DL-022) |
+| MVP stories | All 11 built and merged: #1 sign-in, #2 squads, #3 consent, #4 sessions, #5 wellness, #6 offline sync, #7 load metrics, #8 combined load, #9 flags, #10 squad overview, #11 role-based access. Coach-flow stories #17, #21, #48 to #51 merged on 28 Nov |
+| On `prototype/demo` (in review) | V2 design system and restyle of every screen (#52 to #55), real data on Today (#45), delete account and data (#14), synthetic demo squad and `seed:demo` (#56), CI worker cap (DL-037) |
+| API | NestJS with a global auth guard. `GET`/`DELETE /me`, `POST /me/health-consent`, sessions and wellness (idempotent by `clientId`), `GET /wellness/today`, `GET /me/load`, `/me/flags`, `/me/wellness-trend`, squads (create, join, list, members, invite code), per-squad consent, team sessions, injuries and restrictions, the squad overview, and role-based staff access to one athlete (DL-022) |
 | Sign-in (#1) | Firebase email and password in the app; the API verifies Firebase ID tokens. Health-data consent is recorded at setup and required for every health-data route (DL-008) |
-| Database | PostgreSQL with three migrations (init, health-data consent, offline-sync `clientId`) ([`docs/design/erd.md`](docs/design/erd.md)) |
+| Database | PostgreSQL with five migrations ([`docs/design/erd.md`](docs/design/erd.md)) |
 | Analytics | Session load, weekly load, usual week, EWMA ACWR (rolling ACWR as a swappable alternative, DL-018), monotony, strain, wellness baselines and flag rules (DL-007, DL-020). Calculated on each request, never stored (DL-019) |
-| Mobile app | Expo app on localhost (web). Real: sign-in, setup consent, wellness check, session logging with an offline queue, Recent sessions, the Latest session card and flags on Today, Trends (weekly load, ACWR, wellness trend), the flag screen, My squads with per-squad sharing, and the squad members list. Today's load figures are still sample data (I-23) |
-| Staff views | In the mobile app: squad overview (#10), squad members, and an athlete's combined load (#8). The separate web dashboard is a later Should |
-| CI | Lint, typecheck and tests on a self-hosted GitLab runner on the laptop. The API image builds only when an image input changes. Tests can time out when the laptop is busy (I-18) |
-| Staging | Azure Container Apps, Norway East (DL-014). Still runs the 20 Nov build; the 25 Nov work, including a migration, is not deployed yet (I-19) |
-| Tests | 659 passing on `main` on 25 Nov (pipeline 8167: 133 analytics, 344 API, 182 mobile). API tests fake the database; real PostgreSQL integration tests are still to do (I-2) |
+| Mobile app | Expo app on localhost (web). Every screen shows real data; the AI tab and five Profile rows are not built yet ([`apps/mobile/README.md`](apps/mobile/README.md)) |
+| Staff views | In the mobile app: Squad tab, squad overview, members, invite, team sessions and athlete detail. The separate web dashboard is a later Should |
+| CI | Lint, typecheck and tests on a self-hosted GitLab runner on the laptop. Tests were killed for memory on 28 Nov (I-46); a cap of 4 Jest workers per package is proposed (DL-037) |
+| Staging | Azure Container Apps, Norway East (DL-014). Deploys are a manual command (below); check `DEPLOYED_IMAGE` for what is running |
+| Tests | Locally on `prototype/demo`, 28 Nov: 157 analytics, 675 API and 403 mobile tests passing. API tests fake the database; two opt-in real-PostgreSQL tests exist (`test:db`) but are not in CI yet (I-2) |
 
-Remaining MVP work is built athlete-first, one complete feature at a time (DL-005).
+Remaining work (#12 and #13 need an AI provider decision) is built one story at a time in continuous flow (DL-016).
 
 ---
 
