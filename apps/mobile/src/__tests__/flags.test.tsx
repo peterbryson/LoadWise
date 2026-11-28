@@ -29,6 +29,9 @@ jest.mock('@/lib/api', () => ({
   createApiClient: () => ({ myFlags: mockMyFlags, recentSessions: mockRecentSessions, teamSessionsToRate: () => Promise.resolve([]) }),
 }));
 jest.mock('@/lib/auth', () => ({ useAuth: jest.fn() }));
+// #45: the check-in and This week cards are tested in today-cards.test.tsx.
+jest.mock('@/components/today/CheckInCard', () => ({ CheckInCard: () => null }));
+jest.mock('@/components/today/WeekLoadCard', () => ({ WeekLoadCard: () => null }));
 // Today also shows the offline sync card (#6); these tests are about flags, so nothing is waiting.
 jest.mock('@/lib/offline-sync', () => ({
   useOfflineSync: () => ({

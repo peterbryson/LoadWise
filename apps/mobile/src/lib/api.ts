@@ -83,6 +83,13 @@ export interface SavedWellness extends Omit<WellnessCheck, 'clientId'> {
   clientId: string | null;
 }
 
+/** Today's check-in, from `GET /wellness/today` (#45). `entry` is null until the athlete checks in. */
+export interface TodayWellness {
+  /** The Europe/London day the API counts as today. */
+  date: string;
+  entry: SavedWellness | null;
+}
+
 /** A saved session, from `POST /sessions` and `GET /sessions`. `load` is RPE × minutes (AU). */
 export interface SavedSession extends Omit<SessionLog, 'clientId'> {
   id: string;
@@ -191,6 +198,8 @@ export function createApiClient({ baseUrl, getIdToken, fetchFn = fetch }: ApiCli
       request<Me>('POST', '/me/health-consent', { noticeVersion: HEALTH_DATA_NOTICE_VERSION }),
     /** #5: the daily wellness check. 409 if today's check-in is already saved; 200 for a replayed clientId (#6). */
     saveWellness: (input: WellnessCheck) => request<SavedWellness>('POST', '/wellness', input),
+    /** #45: whether the athlete has checked in today, for the check-in card on Today. */
+    wellnessToday: () => request<TodayWellness>('GET', '/wellness/today'),
     /** #4: log a training session or match. 200 instead of 201 for a replayed clientId (#6). */
     logSession: (input: SessionLog) => request<SavedSession>('POST', '/sessions', input),
     /** #4 AC3, AC4: the athlete's recent sessions, newest first. The API returns 20 unless `limit` (1 to 50) is given. */
