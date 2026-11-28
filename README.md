@@ -122,6 +122,8 @@ the same commit as any dependency change.
 | `pnpm typecheck` | TypeScript checks across every workspace |
 | `pnpm build` | Production builds |
 | `pnpm --filter @loadwise/analytics test` | Run one workspace's tasks |
+| `pnpm --filter @loadwise/api test:db` | Tests against the real local PostgreSQL for what fake-database tests cannot prove: account deletion cascades (#14 AC2) and the demo seed (#56). Opt-in, because CI has no database yet (I-2). The seed test uses its own `loadwise_seed_test` database |
+| `pnpm --filter @loadwise/api seed:demo` | Fills a demo-only database with the synthetic demo squad for today. See [Demo data](#demo-data) |
 | `pnpm --filter @loadwise/api perf:overview` | NFR 3.1: times the squad overview for 40 synthetic athletes with a full season, against the local database (`docker compose up -d db`, migrations applied). Opt-in, not part of `pnpm test` or CI; removes its own data afterwards |
 
 Check it works: `curl http://localhost:3000/health` should return `{"status":"ok", ...}`, and
@@ -160,6 +162,37 @@ curl -s https://loadwise-api.ashygrass-5399f68d.norwayeast.azurecontainerapps.io
 
 The first request after an idle period takes a few seconds, because staging scales to zero.
 The container applies any new migrations to the staging database when it starts.
+
+### Demo data
+
+The interim video and live demos use a synthetic squad (#56), never real athletes. Every person is
+invented and every email address is on `example.com`, a domain reserved for examples.
+
+| Who | Email | Shows |
+| --- | --- | --- |
+| Coach Morgan | `coach@example.com` | Squad overview with flags, not-logged and not-sharing rows (#10); team sessions (#17); invite (#49) |
+| Alex (S&C) | `sc@example.com` | The S&C view of the same squad (#11) |
+| Jordan (Physio) | `physio@example.com` | Injury and restriction detail (#21) |
+| Aoife (demo) | `athlete@example.com` | An athlete in two squads, sharing with both: Today, Trends and combined load (#8) |
+| Ben, Ciara, ... | `athlete02@example.com` to `athlete20@example.com` | 02 load spike (ACWR flag), 03 wellness dip (wellness flag), 04 has not checked in today, 05 never shared, 06 withdrew sharing two days ago, 07 injured, 08 joined 10 days ago (baseline still building) |
+
+Eight weeks of sessions and check-ins end on the day you seed, so re-seed on the morning of a demo.
+Flags are not stored: the engine raises them from this data (`demo-squad.spec.ts` checks which
+athletes are flagged, on every weekday).
+
+1. **Make the logins you will use.** In the app, choose *Create an account* for each email above
+   that you want to sign in as, with a password of your choice. Firebase keeps only the email and
+   password; nothing else.
+2. **Seed.** `pnpm --filter @loadwise/api seed:demo`. It replaces every user and squad, so it
+   refuses, writing nothing, if anyone in the database is not on `example.com`. Accounts made in
+   step 1 keep their sign-in, so they see the new data straight away; you can re-seed at any time.
+3. **Sign in** as the coach or the athlete. Members you have not made a login for are listed but
+   cannot sign in.
+
+Seeding staging has not been tried yet. The image contains the seed, so one way is to run
+`node dist/demo/seed-demo.main.js` in the container (`az containerapp exec`) from Azure Cloud Shell.
+Any non-demo account there must be deleted first (Profile → Delete account and data), or the seed
+refuses.
 
 ---
 

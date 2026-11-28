@@ -11,7 +11,8 @@ module.exports = {
     '^.+\\.js$': ['ts-jest', { tsconfig: { allowJs: true } }],
   },
   transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/)?jose[@/])'],
-  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.spec.ts', '!src/main.ts'],
+  // Entry points only start the app or a command; what they run is tested through its modules.
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.spec.ts', '!src/main.ts', '!src/**/*.main.ts'],
   reporters: [
     'default',
     ['jest-junit', { outputDirectory: 'reports', outputName: 'junit-api.xml' }],
